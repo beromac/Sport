@@ -28,8 +28,16 @@
 
   /* ---------- données ---------- */
   function defaults() {
-    return { profile: { name: '', height: '', goal: '' }, weights: [], pains: [], sessions: [],
+    return { profile: { name: '', height: '', goal: '' }, weights: [], waist: [], pains: [], sessions: [],
       settings: { ack: false, rest: 45 }, videos: {} };
+  }
+  /* anciennes versions : le tour de taille était rangé dans la pesée */
+  function migrateWaist(d) {
+    if (!Array.isArray(d.waist)) d.waist = [];
+    (d.weights || []).forEach(function (w) {
+      if (w.waist && !d.waist.some(function (x) { return x.d === w.d; })) d.waist.push({ d: w.d, cm: w.waist });
+      delete w.waist;
+    });
   }
   function load() {
     var d = defaults();
@@ -39,6 +47,7 @@
         Object.keys(d).forEach(function (k) { if (j[k] != null) d[k] = j[k]; });
         d.settings = Object.assign({ ack: false, rest: 45 }, j.settings || {});
         d.profile = Object.assign({ name: '', height: '', goal: '' }, j.profile || {});
+        migrateWaist(d);
       }
     } catch (e) { /* données illisibles : on repart de zéro */ }
     return d;
@@ -168,15 +177,23 @@
       '<input class="rng" type="range" id="' + id + '" min="0" max="10" step="1" value="' + v + '">';
   }
   function sortedWeights() { return S.weights.slice().sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; }); }
+  function sortedWaist() { return S.waist.slice().sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; }); }
+  function fmtCm(v) { return (Math.round(v * 10) / 10).toString().replace('.', ',') + ' cm'; }
+  function signed(v) { var r = Math.round(v * 10) / 10; return (r > 0 ? '+' : '') + r.toString().replace('.', ','); }
   function weightCard() {
-    var w = sortedWeights();
-    if (!w.length) return '<section class="card"><h2>Poids</h2><p class="muted">Ajoutez votre poids dans l\'onglet Suivi pour voir votre progression.</p></section>';
+    var w = sortedWeights(), wa = sortedWaist(), belly = '';
+    if (wa.length) {
+      var wl = wa[wa.length - 1], wd = wl.cm - wa[0].cm;
+      belly = '<div class="row sb" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><div><b>Tour de ventre : ' + fmtCm(wl.cm) + '</b><div class="muted">au ' + fmtDate(wl.d) + '</div></div>' +
+        (wa.length > 1 ? '<div style="text-align:right"><b>' + signed(wd) + ' cm</b><div class="muted">depuis le début</div></div>' : '') + '</div>';
+    }
+    if (!w.length) return '<section class="card"><h2>Poids</h2><p class="muted">Ajoutez votre poids dans l\'onglet Suivi pour voir votre progression.</p>' + belly + '</section>';
     var last = w[w.length - 1], first = w[0], diff = last.kg - first.kg;
     var goal = num(S.profile.goal);
     var h = '<section class="card"><h2>Poids</h2><div class="row sb"><div><div class="big-num">' + fmtKg(last.kg) + '</div><div class="muted">au ' + fmtDate(last.d) + '</div></div>' +
       '<div style="text-align:right"><b>' + (diff > 0 ? '+' : '') + (Math.round(diff * 10) / 10).toString().replace('.', ',') + ' kg</b><div class="muted">depuis le début</div></div></div>';
     if (goal) h += '<p class="muted">Objectif : ' + fmtKg(goal) + ' (reste ' + fmtKg(Math.max(0, last.kg - goal)) + ')</p>';
-    return h + '</section>';
+    return h + belly + '</section>';
   }
 
   function viewSessions() {
@@ -203,14 +220,13 @@
   }
 
   function viewTrack() {
-    var tabs = [['poids', 'Poids'], ['douleur', 'Douleurs'], ['histo', 'Historique']];
+    var tabs = [['poids', 'Poids'], ['ventre', 'Ventre'], ['douleur', 'Douleurs'], ['histo', 'Séances']];
     var h = '<h1>Suivi</h1><div class="seg">' + tabs.map(function (t) {
       return '<button class="' + (ui.track === t[0] ? 'on' : '') + '" data-act="track" data-t="' + t[0] + '">' + t[1] + '</button>';
     }).join('') + '</div>';
     if (ui.track === 'poids') {
       var w = sortedWeights();
-      h += '<section class="card"><h2>Ajouter une pesée</h2><div class="row"><div class="grow"><label for="wkg">Poids (kg)</label><input id="wkg" type="text" inputmode="decimal" step="0.1" placeholder="ex. 84,5"></div>' +
-        '<div class="grow"><label for="wwaist">Tour de taille (cm)</label><input id="wwaist" type="text" inputmode="decimal" step="0.5" placeholder="facultatif"></div></div>' +
+      h += '<section class="card"><h2>Ajouter une pesée</h2><label for="wkg">Poids (kg)</label><input id="wkg" type="text" inputmode="decimal" placeholder="ex. 84,5">' +
         '<button class="btn primary big" data-act="addweight" style="margin-top:12px">Enregistrer</button></section>';
       h += '<section class="card"><h2>Évolution</h2>' + chart([{ name: 'Poids', color: '#0f766e', pts: w.map(function (x) { return { x: x.d, y: x.kg }; }) }], { dec: 1, label: 'Évolution du poids' });
       var hgt = num(S.profile.height);
@@ -220,8 +236,23 @@
       }
       h += '</section>';
       h += '<section class="card"><h2>Historique</h2>' + (w.length ? '<ul class="list">' + w.slice().reverse().slice(0, 30).map(function (x) {
-        return '<li><div class="grow"><b>' + fmtKg(x.kg) + '</b>' + (x.waist ? ' · taille ' + x.waist + ' cm' : '') + '<div class="muted">' + fmtDate(x.d) + '</div></div><button class="btn small danger" data-act="delweight" data-d="' + x.d + '" aria-label="Supprimer">🗑</button></li>';
+        return '<li><div class="grow"><b>' + fmtKg(x.kg) + '</b>' + '<div class="muted">' + fmtDate(x.d) + '</div></div><button class="btn small danger" data-act="delweight" data-d="' + x.d + '" aria-label="Supprimer">🗑</button></li>';
       }).join('') + '</ul>' : '<p class="muted">Aucune pesée.</p>') + '</section>';
+    } else if (ui.track === 'ventre') {
+      var wa = sortedWaist();
+      h += '<section class="card"><h2>Ajouter une mesure</h2><label for="wcm">Tour de ventre (cm)</label><input id="wcm" type="text" inputmode="decimal" placeholder="ex. 98,5">' +
+        '<button class="btn primary big" data-act="addwaist" style="margin-top:12px">Enregistrer</button>' +
+        '<details><summary>Comment bien mesurer</summary><p>Debout, ventre relâché, mètre de couturière à plat au niveau du nombril (sans serrer ni creuser le ventre). Mesurez après une expiration normale, de préférence le matin, et toujours de la même façon.</p></details></section>';
+      h += '<section class="card"><h2>Évolution</h2>' + chart([{ name: 'Tour de ventre', color: '#b45309', pts: wa.map(function (x) { return { x: x.d, y: x.cm }; }) }], { dec: 1, label: 'Évolution du tour de ventre' });
+      if (wa.length > 1) {
+        var wl2 = wa[wa.length - 1], wp = wa[wa.length - 2];
+        h += '<div class="row sb" style="margin-top:8px"><div><b>' + signed(wl2.cm - wp.cm) + ' cm</b><div class="muted">depuis la mesure précédente</div></div>' +
+          '<div style="text-align:right"><b>' + signed(wl2.cm - wa[0].cm) + ' cm</b><div class="muted">depuis le début</div></div></div>';
+      }
+      h += '<p class="muted">Mesurez une fois par semaine, pas tous les jours : les variations d\'un jour à l\'autre sont normales. Une baisse régulière sur plusieurs semaines est un bon signe, même quand la balance bouge peu.</p></section>';
+      h += '<section class="card"><h2>Historique</h2>' + (wa.length ? '<ul class="list">' + wa.slice().reverse().slice(0, 30).map(function (x) {
+        return '<li><div class="grow"><b>' + fmtCm(x.cm) + '</b><div class="muted">' + fmtDate(x.d) + '</div></div><button class="btn small danger" data-act="delwaist" data-d="' + x.d + '" aria-label="Supprimer">🗑</button></li>';
+      }).join('') + '</ul>' : '<p class="muted">Aucune mesure.</p>') + '</section>';
     } else if (ui.track === 'douleur') {
       var p = S.pains.slice().sort(function (a, b) { return a.d < b.d ? -1 : 1; }).slice(-30);
       h += '<section class="card"><h2>Douleurs (0 à 10)</h2>' + chart([
@@ -316,6 +347,7 @@
       h += '<h3>Votre profil (modifiable plus tard)</h3><label for="onname">Prénom</label><input id="onname" type="text">' +
         '<div class="row"><div class="grow"><label for="onh">Taille (cm)</label><input id="onh" type="text" inputmode="decimal"></div>' +
         '<div class="grow"><label for="onw">Poids (kg)</label><input id="onw" type="text" inputmode="decimal" step="0.1"></div></div>' +
+        '<label for="onv">Tour de ventre (cm), facultatif</label><input id="onv" type="text" inputmode="decimal">' +
         '<label for="ong">Poids objectif (kg)</label><input id="ong" type="text" inputmode="decimal" step="0.1">' +
         '<button class="btn primary big" style="margin-top:16px" data-act="ack">J\'ai compris, commencer</button>';
     } else h += '<button class="btn big" data-act="close" style="margin-top:12px">Fermer</button>';
@@ -425,9 +457,19 @@
     addweight: function () {
       var kg = num($('#wkg').value);
       if (!kg || kg < 30 || kg > 300) { alert('Entrez un poids valide (en kg).'); return; }
-      var waist = num($('#wwaist').value), t = today();
+      var t = today();
       S.weights = S.weights.filter(function (w) { return w.d !== t; });
-      S.weights.push({ d: t, kg: kg, waist: waist || null }); save(); render();
+      S.weights.push({ d: t, kg: kg }); save(); render();
+    },
+    addwaist: function () {
+      var cm = num($('#wcm').value);
+      if (!cm || cm < 40 || cm > 250) { alert('Entrez un tour de ventre valide (en cm).'); return; }
+      var t = today();
+      S.waist = S.waist.filter(function (x) { return x.d !== t; });
+      S.waist.push({ d: t, cm: cm }); save(); render();
+    },
+    delwaist: function (el) {
+      if (confirm('Supprimer cette mesure ?')) { S.waist = S.waist.filter(function (x) { return x.d !== el.dataset.d; }); save(); render(); }
     },
     delweight: function (el) {
       if (confirm('Supprimer cette pesée ?')) { S.weights = S.weights.filter(function (w) { return w.d !== el.dataset.d; }); save(); render(); }
@@ -445,7 +487,9 @@
     ack: function () {
       var w = num($('#onw').value), t = today();
       S.profile.name = $('#onname').value.trim(); S.profile.height = $('#onh').value; S.profile.goal = $('#ong').value;
-      if (w && w >= 30 && w <= 300) S.weights.push({ d: t, kg: w, waist: null });
+      if (w && w >= 30 && w <= 300) S.weights.push({ d: t, kg: w });
+      var v = num($('#onv').value);
+      if (v && v >= 40 && v <= 250) S.waist.push({ d: t, cm: v });
       S.settings.ack = true; save(); closeSheet(); render();
     },
     export: function () {
@@ -506,7 +550,7 @@
         var j = JSON.parse(fr.result);
         if (!j || !Array.isArray(j.weights) || !Array.isArray(j.sessions)) throw new Error('format');
         if (!confirm('Remplacer vos données actuelles par cette sauvegarde ?')) return;
-        S = Object.assign(defaults(), j); save(); render(); alert('Sauvegarde importée ✔');
+        S = Object.assign(defaults(), j); migrateWaist(S); save(); render(); alert('Sauvegarde importée ✔');
       } catch (err) { alert('Fichier non valide.'); }
     };
     fr.readAsText(e.target.files[0]);
