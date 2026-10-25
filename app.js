@@ -28,7 +28,7 @@
 
   /* ---------- données ---------- */
   function defaults() {
-    return { profile: { name: '', height: '', goal: '' }, weights: [], waist: [], pains: [], sessions: [],
+    return { profile: { name: '', height: '', goal: '' }, weights: [], waist: [], pains: [], sessions: [], activities: [],
       settings: { ack: false, rest: 45, awake: true, sound: true }, videos: {} };
   }
   /* anciennes versions : le tour de taille était rangé dans la pesée */
@@ -50,12 +50,13 @@
         migrateWaist(d);
       }
     } catch (e) { /* données illisibles : on repart de zéro */ }
+    if (!Array.isArray(d.activities)) d.activities = [];
     return d;
   }
   var S = load();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* stockage plein ou bloqué */ } }
 
-  var ui = { tab: 'home', track: 'poids', grp: 'Tous' };
+  var ui = { prog: null, tab: 'home', track: 'poids', grp: 'Tous' };
   var deferredInstall = null;
 
   /* ---------- doses ---------- */
@@ -92,13 +93,14 @@
     var y1 = o.max != null ? o.max : Math.max.apply(null, ys);
     if (y0 === y1) { y0 -= 1; y1 += 1; }
     if (o.min == null) { var pad = (y1 - y0) * 0.15; y0 -= pad; y1 += pad; }
+    var dec = o.dec != null ? o.dec : ((y1 - y0) < 4 ? 1 : 0);
     function X(t) { return x1 === x0 ? pl + (W - pl - pr) / 2 : pl + (t - x0) / (x1 - x0) * (W - pl - pr); }
     function Y(v) { return pt + (1 - (v - y0) / (y1 - y0)) * (H - pt - pb); }
     var out = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.label || 'Graphique') + '">';
     for (var i = 0; i <= 3; i++) {
       var v = y0 + (y1 - y0) * i / 3, y = Y(v);
       out += '<line class="gl" x1="' + pl + '" y1="' + y.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + y.toFixed(1) + '"/>' +
-        '<text x="' + (pl - 4) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + (o.dec ? v.toFixed(o.dec) : Math.round(v)) + '</text>';
+        '<text x="' + (pl - 4) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + (dec ? v.toFixed(dec) : Math.round(v)) + '</text>';
     }
     series.forEach(function (s) {
       var pts = s.pts.map(function (p) { return X(parse(p.x).getTime()).toFixed(1) + ',' + Y(p.y).toFixed(1); });
@@ -152,7 +154,7 @@
     var days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
     var dots = days.map(function (l, i) {
       var d = parse(wk); d.setDate(d.getDate() + i); var k = ymd(d);
-      var on = S.sessions.some(function (s) { return s.d === k; });
+      var on = S.sessions.some(function (s) { return s.d === k; }) || S.activities.some(function (a) { return a.d === k; });
       return '<div class="dot' + (on ? ' on' : '') + (k === today() ? ' today' : '') + '"><i></i>' + l + '</div>';
     }).join('');
     var h = '<h1>Bonjour' + (S.profile.name ? ' ' + esc(S.profile.name) : '') + ' 👋</h1>';
@@ -167,6 +169,7 @@
     h += '<section class="card"><div class="row sb"><h2>Cette semaine</h2><span class="pill">' + wkSessions.length + ' / 3 séances</span></div>' +
       '<div class="dots">' + dots + '</div>' +
       '<p class="muted">Objectif : 3 séances et de la marche les autres jours. Un jour de repos entre deux séances de renforcement.</p></section>';
+    h += '<button class="btn big" data-act="addact" style="margin-bottom:12px">➕ Ajouter une activité faite</button>';
     h += weightCard();
     if (deferredInstall) h += '<button class="btn big" data-act="install">📲 Installer l\'application sur le téléphone</button>';
     h += '<button class="btn big" data-act="safety" style="margin-top:10px">🛟 Règles de sécurité</button>';
@@ -197,7 +200,7 @@
   }
 
   function viewSessions() {
-    var h = '<h1>Séances</h1>';
+    var h = '<h1>Séances</h1><button class="btn big" data-act="addact" style="margin-bottom:12px">➕ Ajouter une activité hors séance</button>';
     D.sessions.forEach(function (s) {
       h += '<section class="card"><div class="row sb"><h2 style="margin:0">' + esc(s.name) + '</h2><span class="pill">' + esc(s.tag) + '</span></div>' +
         '<p class="muted">' + esc(s.desc) + '</p><p class="muted">' + s.items.length + ' exercices · environ ' + estMinutes(s.items) + ' min</p>' +
@@ -220,7 +223,7 @@
   }
 
   function viewTrack() {
-    var tabs = [['poids', 'Poids'], ['ventre', 'Ventre'], ['douleur', 'Douleurs'], ['histo', 'Séances']];
+    var tabs = [['poids', 'Poids'], ['ventre', 'Ventre'], ['douleur', 'Douleurs'], ['prog', 'Progrès'], ['histo', 'Séances']];
     var h = '<h1>Suivi</h1><div class="seg">' + tabs.map(function (t) {
       return '<button class="' + (ui.track === t[0] ? 'on' : '') + '" data-act="track" data-t="' + t[0] + '">' + t[1] + '</button>';
     }).join('') + '</div>';
@@ -260,12 +263,15 @@
         { name: 'Genou', color: '#2563eb', pts: p.map(function (x) { return { x: x.d, y: x.knee }; }) }
       ], { min: 0, max: 10, label: 'Évolution des douleurs' }) +
         '<p class="muted">Enregistrez votre douleur chaque jour depuis l\'accueil. Montrez ce graphique à votre médecin ou kiné.</p></section>';
+    } else if (ui.track === 'prog') {
+      h += progHtml();
     } else {
-      var tot = S.sessions.length, mins = S.sessions.reduce(function (a, s) { return a + (s.mins || 0); }, 0);
+      var tot = S.sessions.length, mins = S.sessions.reduce(function (a, s) { return a + (s.mins || 0); }, 0) + totalActMins();
       h += '<section class="card"><div class="row"><div class="grow"><div class="big-num">' + tot + '</div><div class="muted">séances</div></div><div class="grow"><div class="big-num">' + mins + '</div><div class="muted">minutes</div></div></div></section>';
       h += '<section class="card"><h2>Séances faites</h2>' + (tot ? '<ul class="list">' + S.sessions.slice().reverse().slice(0, 40).map(function (s) {
-        return '<li><div class="grow"><b>' + esc(s.name) + '</b><div class="muted">' + fmtDate(s.d) + ' · ' + s.mins + ' min' + (s.sci != null ? ' · douleur après : dos ' + s.sci + ', genou ' + s.knee : '') + '</div></div></li>';
+        return '<li><div class="grow"><b>' + esc(s.name) + '</b><div class="muted">' + fmtDate(s.d) + ' · ' + s.mins + ' min' + (s.sci != null ? ' · douleur après : dos ' + s.sci + ', genou ' + s.knee : '') + '</div>' + detHtml(s) + '</div></li>';
       }).join('') + '</ul>' : '<p class="muted">Aucune séance pour l\'instant.</p>') + '</section>';
+      h += actListHtml();
     }
     return h;
   }
@@ -289,7 +295,147 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v3 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v4 · ne remplace pas un avis médical</p>';
+  }
+
+  /* ---------- résultats réalisés, activités libres, progrès ---------- */
+  function sgn(v) { var r = Math.round(v * 10) / 10; return (r > 0 ? '+' : '') + String(r).replace('.', ','); }
+  function plannedOf(d) { return d.type === 'reps' ? d.reps : (d.type === 'time' ? d.secs : d.mins); }
+  function unitOf(ex) { var t = ex.dose.type; return t === 'reps' ? ' rép.' : (t === 'time' ? ' s' : ' min'); }
+  function planStr(ex, x) {
+    var t = ex.dose.type, side = ex.dose.perSide ? ' par côté' : '';
+    if (t === 'cardio') return x.plan + ' min';
+    return x.sets + ' × ' + x.plan + (t === 'time' ? ' s' : ' rép.') + side;
+  }
+  function doneStr(ex, done) { return done.length ? done.join(' + ') + unitOf(ex) : 'passé'; }
+  function isFull(ex, x) {
+    var n = ex.dose.type === 'cardio' ? 1 : x.sets;
+    return x.done.length >= n && x.done.every(function (v) { return v >= x.plan; });
+  }
+  function badge(ok) {
+    return ok ? '<span class="pill">complet</span>' : '<span class="pill" style="background:var(--warn-bg);color:var(--warn)">partiel</span>';
+  }
+  function recordSet(v) { P.res[P.i] = (P.res[P.i] || []).concat([v]); }
+  function readDone(natural) {
+    var d = P.items[P.i].dose, plan = plannedOf(d), el = $('#pdone');
+    var max = d.type === 'reps' ? 500 : (d.type === 'time' ? 3600 : 600);
+    var touched = !!el && el.value.trim() !== String(plan);
+    if (!natural && !touched && P.mode === 'timer' && d.type !== 'reps' && !(d.type === 'time' && d.perSide)) {
+      var left = remaining();
+      if (left > 0) {
+        var elapsed = P.total - left;
+        return d.type === 'time' ? Math.max(1, elapsed) : Math.max(1, Math.round(elapsed / 60));
+      }
+      return plan;
+    }
+    if (!el) return plan;
+    var v = num(el.value);
+    if (v == null || v < 0 || v > max || Math.round(v) !== v) {
+      if (natural) return plan;
+      alert('Entrez un nombre entier valide pour ce que vous avez réellement fait.');
+      return null;
+    }
+    return v;
+  }
+  function buildDet() {
+    return P.items.map(function (it, i) {
+      var d = it.dose;
+      return { id: it.ex.id, sets: d.type === 'cardio' ? 1 : d.sets, plan: plannedOf(d), done: P.res[i] || [] };
+    });
+  }
+  function detHtml(s) {
+    if (!s.det || !s.det.length) return '';
+    return '<details><summary>Détail des exercices</summary><ul class="list">' + s.det.map(function (x) {
+      var ex = EX[x.id]; if (!ex) return '';
+      return '<li><div class="grow"><b>' + ex.icon + ' ' + esc(ex.name) + '</b><div class="muted">Prévu : ' + esc(planStr(ex, x)) + ' · Réalisé : ' + esc(doneStr(ex, x.done)) + '</div></div>' +
+        (x.done.length ? badge(isFull(ex, x)) : '') + '</li>';
+    }).join('') + '</ul></details>';
+  }
+  function validDate(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || '') && d <= today(); }
+  function actMins(a) {
+    var ex = EX[a.id]; if (!ex) return 0;
+    var k = ex.dose.perSide ? 2 : 1;
+    if (ex.dose.type === 'cardio') return a.mins || 0;
+    if (ex.dose.type === 'time') return Math.max(1, Math.round(a.sets * a.secs * k / 60));
+    return Math.max(1, Math.round(a.sets * a.reps * k * 3.5 / 60));
+  }
+  function totalActMins() { return S.activities.reduce(function (t, a) { return t + actMins(a); }, 0); }
+  function actLabel(a) {
+    var ex = EX[a.id]; if (!ex) return '';
+    var side = ex.dose.perSide ? ' par côté' : '';
+    if (ex.dose.type === 'cardio') return a.mins + ' min';
+    if (ex.dose.type === 'time') return a.sets + ' × ' + a.secs + ' s' + side;
+    return a.sets + ' × ' + a.reps + ' répétitions' + side + (a.kg ? ' · ' + String(a.kg).replace('.', ',') + ' kg' : '');
+  }
+  function actFields(id) {
+    var ex = EX[id], d = ex.dose, side = d.perSide ? ' (par côté)' : '';
+    function f(i, label, v) { return '<div class="grow"><label for="' + i + '">' + label + '</label><input id="' + i + '" type="text" inputmode="numeric" value="' + esc(v) + '"></div>'; }
+    if (d.type === 'cardio') return '<div class="row">' + f('amin', 'Durée (minutes)', d.mins) + '</div>';
+    if (d.type === 'time') return '<div class="row">' + f('asets', 'Séries', d.sets) + f('asecs', 'Secondes par série' + side, d.secs) + '</div>';
+    var h = '<div class="row">' + f('asets', 'Séries', d.sets) + f('areps', 'Répétitions par série' + side, d.reps) + '</div>';
+    if (ex.loaded) {
+      var lk = S.loads && S.loads[id];
+      h += '<label for="akg">Charge (kg), facultatif</label><input id="akg" type="text" inputmode="decimal" value="' + (lk != null ? esc(String(lk).replace('.', ',')) : '') + '">';
+    }
+    return h;
+  }
+  function actSheet(pre) {
+    var id = pre && EX[pre] ? pre : D.exos[0].id;
+    var opts = D.groups.map(function (g) {
+      return '<optgroup label="' + esc(g) + '">' + D.exos.filter(function (e) { return e.group === g; }).map(function (e) {
+        return '<option value="' + e.id + '"' + (e.id === id ? ' selected' : '') + '>' + esc(e.name) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+    openSheet('<div class="top"><h2 style="margin:0">Ajouter une activité</h2><button class="x" data-act="close" aria-label="Fermer">✕</button></div>' +
+      '<p class="muted">Notez ce que vous avez fait en dehors des séances prévues, avec les quantités réellement faites.</p>' +
+      '<label for="aex">Exercice</label><select id="aex">' + opts + '</select>' +
+      '<label for="adate">Date</label><input id="adate" type="date" value="' + today() + '" max="' + today() + '">' +
+      '<div id="afields" style="margin-top:4px">' + actFields(id) + '</div>' +
+      '<button class="btn primary big" data-act="saveact" style="margin-top:16px">Enregistrer</button>');
+  }
+  function actListHtml() {
+    var list = S.activities.slice().sort(function (a, b) { return a.d < b.d ? 1 : (a.d > b.d ? -1 : (a.k < b.k ? 1 : -1)); }).slice(0, 40);
+    return '<section class="card"><div class="row sb"><h2 style="margin:0">Activités libres</h2><button class="btn small" data-act="addact">➕ Ajouter</button></div>' +
+      (list.length ? '<ul class="list">' + list.map(function (a) {
+        var ex = EX[a.id]; if (!ex) return '';
+        return '<li><div class="grow"><b>' + ex.icon + ' ' + esc(ex.name) + '</b><div class="muted">' + fmtDate(a.d) + ' · ' + esc(actLabel(a)) + '</div></div><button class="btn small danger" data-act="delact" data-k="' + esc(a.k) + '" aria-label="Supprimer">🗑</button></li>';
+      }).join('') + '</ul>' : '<p class="muted">Aucune activité pour l\'instant. Elles s\'ajoutent à vos minutes et à vos jours actifs de la semaine.</p>') + '</section>';
+  }
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+    document.body.appendChild(t); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 2600);
+  }
+  function recs(id) {
+    var ex = EX[id], out = [];
+    if (!ex) return out;
+    S.sessions.forEach(function (s) {
+      (s.det || []).forEach(function (x) { if (x.id === id && x.done && x.done.length) out.push({ d: s.d, done: x.done, plan: x.plan, sets: x.sets, src: 'séance' }); });
+    });
+    S.activities.forEach(function (a) {
+      if (a.id !== id) return;
+      var t = ex.dose.type, v = t === 'reps' ? a.reps : (t === 'time' ? a.secs : a.mins), n = t === 'cardio' ? 1 : a.sets, arr = [];
+      for (var i = 0; i < n; i++) arr.push(v);
+      out.push({ d: a.d, done: arr, plan: v, sets: n, src: 'libre' });
+    });
+    return out.sort(function (a, b) { return a.d < b.d ? -1 : (a.d > b.d ? 1 : 0); });
+  }
+  function progHtml() {
+    var list = D.exos.filter(function (e) { return recs(e.id).length; });
+    if (!list.length) return '<section class="card"><h2>Progrès</h2><p class="muted">Terminez une séance ou ajoutez une activité libre : vos résultats apparaîtront ici, exercice par exercice.</p></section>';
+    if (!ui.prog || !list.some(function (e) { return e.id === ui.prog; })) ui.prog = list[0].id;
+    var ex = EX[ui.prog], unit = unitOf(ex).trim(), rs = recs(ui.prog);
+    var pts = rs.map(function (r) { return { x: r.d, y: r.done.reduce(function (a, b) { return a + b; }, 0) }; });
+    var best = Math.max.apply(null, rs.map(function (r) { return Math.max.apply(null, r.done); }));
+    var h = '<section class="card"><label for="pgx" style="margin-top:0">Exercice</label><select id="pgx">' + list.map(function (e) {
+      return '<option value="' + e.id + '"' + (e.id === ui.prog ? ' selected' : '') + '>' + esc(e.name) + '</option>';
+    }).join('') + '</select><h2 style="margin-top:14px">Total par séance (' + unit + ')</h2>' +
+      chart([{ name: ex.name, color: '#0f766e', pts: pts }], { label: 'Progrès : ' + ex.name }) +
+      '<div class="row sb" style="margin-top:8px"><div><b>' + best + ' ' + unit + '</b><div class="muted">meilleure série</div></div>' +
+      (pts.length > 1 ? '<div style="text-align:right"><b>' + sgn(pts[pts.length - 1].y - pts[0].y) + ' ' + unit + '</b><div class="muted">depuis le début</div></div>' : '') + '</div></section>';
+    h += '<section class="card"><h2>Dernières fois</h2><ul class="list">' + rs.slice(-8).reverse().map(function (r) {
+      return '<li><div class="grow"><b>' + fmtDate(r.d) + '</b> <span class="muted">· ' + r.src + '</span><div class="muted">' + (r.src === 'libre' ? '' : 'Prévu : ' + esc(planStr(ex, r)) + ' · ') + 'Réalisé : ' + esc(doneStr(ex, r.done)) + '</div></div>' + (r.src === 'libre' ? '' : badge(isFull(ex, r))) + '</li>';
+    }).join('') + '</ul></section>';
+    return h;
   }
 
   /* ---------- rendu principal ---------- */
@@ -319,6 +465,7 @@
     if (ex.tips && ex.tips.length) h += '<div class="banner ok">💡 ' + esc(ex.tips.join(' ')) + '</div>';
     h += '<div class="banner bad">⚠️ <b>Arrêtez si :</b> ' + esc(ex.stop) + '</div>';
     h += '<details><summary>Version plus facile</summary><p>' + esc(ex.easier) + '</p></details>';
+    h += '<button class="btn big" data-act="addact" data-id="' + id + '" style="margin-bottom:8px">➕ Noter que je l\'ai fait</button>';
     h += '<a class="btn big" target="_blank" rel="noopener" href="' + esc(ytUrl(ex)) + '">▶ Voir des vidéos de cet exercice</a>';
     if (mine) h += '<a class="btn big" style="margin-top:8px" target="_blank" rel="noopener" href="' + esc(mine) + '">🎬 Ma vidéo (kiné)</a>';
     h += '<details><summary>Ajouter ma propre vidéo</summary><label for="vurl">Lien (https://…)</label><input id="vurl" type="url" value="' + esc(mine) + '" placeholder="https://…">' +
@@ -411,7 +558,7 @@
     P.t = rem;
     if (rem <= 0) {
       stopTick(); endSignal();
-      if (P.mode === 'timer') finishSet(); else { P.mode = 'ready'; renderPlayer(); }
+      if (P.mode === 'timer') { recordSet(readDone(true)); finishSet(); } else { P.mode = 'ready'; renderPlayer(); }
       return;
     }
     var sideNow = false;
@@ -430,7 +577,7 @@
   function startSession(id) {
     var s = sessionObj(id);
     P = { sid: id, name: s.name, items: s.items.map(function (it) { return { ex: EX[it.id], dose: doseOf(EX[it.id], it) }; }),
-      i: 0, set: 1, mode: 'ready', t: 0, total: 0, side: false, sideDone: false, end: 0, lastBeep: null, started: Date.now(), done: [] };
+      i: 0, set: 1, mode: 'ready', t: 0, total: 0, side: false, sideDone: false, end: 0, lastBeep: null, started: Date.now(), done: [], res: {} };
     requestWake();
     renderPlayer();
   }
@@ -475,6 +622,15 @@
     } else {
       h += '<h2>' + ex.icon + ' ' + esc(ex.name) + '</h2>' + figBox(ex) +
         '<p style="text-align:center"><b>' + esc(doseLabel(d)) + '</b>' + (d.type !== 'cardio' ? ' · série ' + P.set + '/' + d.sets : '') + '</p>';
+      if (d.type === 'cardio' && d.mins >= 10 && P.mode === 'ready') {
+        h += '<label for="palt" style="margin:0 0 4px">Activité du jour</label><select id="palt" style="margin-bottom:10px">' + D.exos.filter(function (e) { return e.dose.type === 'cardio'; }).map(function (e) {
+          return '<option value="' + e.id + '"' + (e.id === ex.id ? ' selected' : '') + '>' + esc(e.name) + '</option>';
+        }).join('') + '</select>';
+      }
+      var plan = plannedOf(d), pl = d.type === 'reps' ? 'Répétitions réalisées' : (d.type === 'time' ? 'Secondes réalisées' : 'Minutes réalisées');
+      if (d.perSide && d.type !== 'cardio') pl += ' (par côté)';
+      if (d.type !== 'cardio') pl += ' sur cette série';
+      h += '<div class="card" style="padding:10px"><label for="pdone" style="margin:0 0 4px">' + pl + ' <span class="muted">(prévu : ' + plan + ')</span></label><input id="pdone" type="text" inputmode="numeric" value="' + plan + '"></div>';
       if (d.type === 'reps') {
         h += '<button class="btn primary big" data-act="setdone">✔ Série terminée</button>';
       } else if (P.mode === 'timer') {
@@ -557,6 +713,33 @@
         S = defaults(); safetyFirst(); render();
       }
     },
+    addact: function (el) { actSheet(el && el.dataset && el.dataset.id ? el.dataset.id : 'walk'); },
+    saveact: function () {
+      var id = $('#aex').value, ex = EX[id], d = ex.dose, dt = $('#adate').value;
+      if (!validDate(dt)) { alert('Choisissez une date valide (pas dans le futur).'); return; }
+      function n(sel, max) { var v = num($(sel).value); return v != null && v >= 1 && v <= max && Math.round(v) === v ? v : null; }
+      var a = { k: String(Date.now()), d: dt, id: id };
+      if (d.type === 'cardio') {
+        a.mins = n('#amin', 600); if (!a.mins) { alert('Indiquez une durée en minutes (1 à 600).'); return; }
+      } else {
+        a.sets = n('#asets', 20); if (!a.sets) { alert('Indiquez le nombre de séries (1 à 20).'); return; }
+        if (d.type === 'time') {
+          a.secs = n('#asecs', 3600); if (!a.secs) { alert('Indiquez la durée en secondes (1 à 3600).'); return; }
+        } else {
+          a.reps = n('#areps', 500); if (!a.reps) { alert('Indiquez le nombre de répétitions (1 à 500).'); return; }
+          var kgEl = $('#akg');
+          if (kgEl && kgEl.value.trim()) {
+            var kg = num(kgEl.value);
+            if (kg == null || kg < 0 || kg > 200) { alert('Charge invalide (en kg).'); return; }
+            a.kg = kg; if (kg > 0 && S.loads) S.loads[id] = kg;
+          }
+        }
+      }
+      S.activities.push(a); save(); closeSheet(); render(); toast('✔ Ajouté : ' + ex.name);
+    },
+    delact: function (el) {
+      if (confirm('Supprimer cette activité ?')) { S.activities = S.activities.filter(function (a) { return a.k !== el.dataset.k; }); save(); render(); }
+    },
     testsound: function () { unlockAudio(); sideSignal(); setTimeout(endSignal, 1100); },
     install: function () {
       if (!deferredInstall) return;
@@ -564,7 +747,10 @@
       deferredInstall.userChoice.then(function () { deferredInstall = null; render(); });
     },
     /* lecteur */
-    setdone: function () { stopTick(); finishSet(); },
+    setdone: function () {
+      var v = readDone(false); if (v === null) return;
+      stopTick(); recordSet(v); finishSet();
+    },
     tstart: function () {
       var d = P.items[P.i].dose;
       P.side = d.type === 'time' && !!d.perSide;
@@ -580,7 +766,7 @@
     },
     finish: function () {
       var sci = +$('#overlay #sci').value, knee = +$('#overlay #knee').value, t = today();
-      S.sessions.push({ d: t, id: P.sid, name: P.name, mins: Math.max(1, Math.round((Date.now() - P.started) / 60000)), n: P.done.length, sci: sci, knee: knee });
+      S.sessions.push({ d: t, id: P.sid, name: P.name, mins: Math.max(1, Math.round((Date.now() - P.started) / 60000)), n: P.done.length, det: buildDet(), sci: sci, knee: knee });
       if (!todayPain()) S.pains.push({ d: t, sci: sci, knee: knee });
       save(); endPlayer();
     }
@@ -598,6 +784,9 @@
     }
   });
   document.addEventListener('change', function (e) {
+    if (e.target.id === 'aex') { $('#afields').innerHTML = actFields(e.target.value); return; }
+    if (e.target.id === 'pgx') { ui.prog = e.target.value; render(); return; }
+    if (e.target.id === 'palt' && P) { P.items[P.i].ex = EX[e.target.value]; renderPlayer(); return; }
     if (e.target.id === 'sawake') { S.settings.awake = e.target.checked; save(); if (e.target.checked) requestWake(); else releaseWake(); return; }
     if (e.target.id === 'ssound') { S.settings.sound = e.target.checked; save(); if (e.target.checked) { unlockAudio(); beep(880, 0.15); } return; }
     if (e.target.id !== 'file' || !e.target.files[0]) return;

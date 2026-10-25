@@ -100,3 +100,7 @@ svg.fig .still{opacity:1}
 
 .chk{display:flex;gap:12px;align-items:center;font-weight:600;margin:12px 0}
 .chk input{width:24px;height:24px;flex:none;accent-color:var(--brand)}
+
+.seg button{font-size:.85rem;padding:9px 2px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;z-index:80;font-weight:600;max-width:90%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+input[type=date]{width:100%;min-height:46px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}

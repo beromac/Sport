@@ -346,6 +346,19 @@ window.DATA = {
       yt: "réglage vélo d'appartement genou"
     },
     {
+      id: "bikeout", name: "Vélo d'extérieur (terrain plat)", group: "Cardio doux", icon: "🚲",
+      dose: { type: "cardio", mins: 30 }, rest: 0, frames: null,
+      steps: [
+        "Choisissez un parcours plat et régulier (piste cyclable, chemin), loin de la circulation si possible.",
+        "Réglez la selle assez haute (genou peu plié en bas de pédale) et gardez un petit braquet : pédalez léger et souple.",
+        "Redressez un peu le guidon pour ne pas trop arrondir le bas du dos."
+      ],
+      tips: ["Évitez les côtes raides et les démarrages en force, qui chargent le genou et le dos."],
+      stop: "Douleur au genou en bas de pédale, sciatique qui augmente, ou malaise.",
+      easier: "15 minutes sur terrain plat, sans forcer.",
+      yt: "réglage selle vélo hauteur genou"
+    },
+    {
       id: "swim", name: "Natation / aquagym", group: "Cardio doux", icon: "🏊",
       dose: { type: "cardio", mins: 25 }, rest: 0, frames: null,
       steps: [
