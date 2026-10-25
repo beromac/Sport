@@ -29,7 +29,7 @@
   /* ---------- données ---------- */
   function defaults() {
     return { profile: { name: '', height: '', goal: '' }, weights: [], waist: [], pains: [], sessions: [],
-      settings: { ack: false, rest: 45 }, videos: {} };
+      settings: { ack: false, rest: 45, awake: true, sound: true }, videos: {} };
   }
   /* anciennes versions : le tour de taille était rangé dans la pesée */
   function migrateWaist(d) {
@@ -45,7 +45,7 @@
       var j = JSON.parse(localStorage.getItem(KEY));
       if (j && typeof j === 'object') {
         Object.keys(d).forEach(function (k) { if (j[k] != null) d[k] = j[k]; });
-        d.settings = Object.assign({ ack: false, rest: 45 }, j.settings || {});
+        d.settings = Object.assign({ ack: false, rest: 45, awake: true, sound: true }, j.settings || {});
         d.profile = Object.assign({ name: '', height: '', goal: '' }, j.profile || {});
         migrateWaist(d);
       }
@@ -279,13 +279,17 @@
         return '<option value="' + v + '"' + (S.settings.rest === v ? ' selected' : '') + '>' + v + ' secondes</option>';
       }).join('') + '</select>' +
       '<button class="btn primary big" data-act="saveprofile" style="margin-top:12px">Enregistrer</button></section>' +
+      '<section class="card"><h2>Écran et son</h2>' +
+      '<label class="chk"><input type="checkbox" id="sawake"' + (S.settings.awake !== false ? ' checked' : '') + '> Garder l\'écran allumé quand l\'application est ouverte</label>' +
+      '<label class="chk"><input type="checkbox" id="ssound"' + (S.settings.sound !== false ? ' checked' : '') + '> Bip à la fin du chrono et au changement de côté</label>' +
+      '<button class="btn big" data-act="testsound">🔊 Tester le son</button><p class="muted">Si vous n\'entendez rien, montez le volume multimédia du téléphone.</p></section>' +
       '<section class="card"><h2>Sauvegarde</h2><p class="muted">Vos données restent sur ce téléphone. Exportez-les de temps en temps.</p>' +
       '<div class="row"><button class="btn grow" data-act="export">⬇ Exporter</button><button class="btn grow" data-act="import">⬆ Importer</button></div>' +
       '<input type="file" id="file" accept="application/json,.json" hidden></section>' +
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v3 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- rendu principal ---------- */
@@ -355,34 +359,83 @@
   }
 
   /* ---------- lecteur de séance ---------- */
-  var P = null, tick = null, wake = null;
+  var P = null, tick = null, wake = null, waking = false, audioCtx = null;
+
+  /* --- écran allumé (Wake Lock) : repris à chaque retour sur l'appli --- */
+  function requestWake() {
+    if (S.settings.awake === false || wake || waking) return;
+    try {
+      if (navigator.wakeLock && document.visibilityState === 'visible') {
+        waking = true;
+        navigator.wakeLock.request('screen').then(function (w) {
+          waking = false; wake = w;
+          w.addEventListener('release', function () { if (wake === w) wake = null; });
+        }).catch(function () { waking = false; });
+      }
+    } catch (e) { waking = false; }
+  }
+  function releaseWake() {
+    try { if (wake) { var w = wake; wake = null; w.release(); } } catch (e) { /* ignoré */ }
+  }
+
+  /* --- sons et vibrations --- */
+  function unlockAudio() {
+    try {
+      if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { /* ignoré */ }
+  }
+  function beep(freq, dur, when, vol) {
+    if (!audioCtx || S.settings.sound === false) return;
+    try {
+      var t0 = audioCtx.currentTime + (when || 0), o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.6, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+    } catch (e) { /* ignoré */ }
+  }
+  function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* ignoré */ } }
+  function countSignal() { beep(880, 0.12); }
+  function sideSignal() { beep(660, 0.2, 0); beep(990, 0.2, 0.3); beep(660, 0.2, 0.6); buzz([200, 100, 200, 100, 200]); }
+  function endSignal() { beep(880, 0.2, 0); beep(880, 0.2, 0.3); beep(1175, 0.6, 0.6); buzz([400, 150, 400]); }
+
+  /* --- chrono basé sur l'heure réelle : reste exact même si le téléphone ralentit l'appli --- */
   function stopTick() { if (tick) { clearInterval(tick); tick = null; } }
-  function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ignoré */ } }
+  function remaining() { return Math.max(0, Math.ceil((P.end - Date.now()) / 1000)); }
+  function showTime() { var el = $('#ptime'); if (el) el.textContent = mmss(P.t); }
+  function step() {
+    if (!P || !tick) return;
+    var rem = remaining();
+    P.t = rem;
+    if (rem <= 0) {
+      stopTick(); endSignal();
+      if (P.mode === 'timer') finishSet(); else { P.mode = 'ready'; renderPlayer(); }
+      return;
+    }
+    var sideNow = false;
+    if (P.mode === 'timer' && P.side && !P.sideDone && rem <= P.total / 2) {
+      P.sideDone = true; sideNow = true; sideSignal();
+      var sd = $('#pside'); if (sd) sd.textContent = '🔁 Changez de côté !';
+    }
+    if (!sideNow && rem <= 3 && P.lastBeep !== rem) { P.lastBeep = rem; countSignal(); }
+    showTime();
+  }
   function startTick() {
     stopTick();
-    tick = setInterval(function () {
-      if (!P) { stopTick(); return; }
-      P.t -= 1;
-      var half = P.mode === 'timer' && P.side && P.t === Math.floor(P.total / 2);
-      if (half) { buzz([200, 100, 200]); var s = $('#pside'); if (s) s.textContent = '🔁 Changez de côté !'; }
-      if (P.t <= 0) {
-        stopTick(); buzz(400);
-        if (P.mode === 'timer') finishSet(); else { P.mode = 'ready'; renderPlayer(); }
-        return;
-      }
-      var el = $('#ptime'); if (el) el.textContent = mmss(P.t);
-    }, 1000);
+    P.end = Date.now() + P.t * 1000; P.lastBeep = null;
+    tick = setInterval(step, 250);
   }
   function startSession(id) {
     var s = sessionObj(id);
     P = { sid: id, name: s.name, items: s.items.map(function (it) { return { ex: EX[it.id], dose: doseOf(EX[it.id], it) }; }),
-      i: 0, set: 1, mode: 'ready', t: 0, total: 0, side: false, started: Date.now(), done: [] };
-    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }).catch(function () { }); } catch (e) { /* ignoré */ }
+      i: 0, set: 1, mode: 'ready', t: 0, total: 0, side: false, sideDone: false, end: 0, lastBeep: null, started: Date.now(), done: [] };
+    requestWake();
     renderPlayer();
   }
   function endPlayer() {
     stopTick(); P = null;
-    try { if (wake) { wake.release(); wake = null; } } catch (e) { /* ignoré */ }
     closeSheet(); render();
   }
   function finishSet() {
@@ -425,7 +478,7 @@
       if (d.type === 'reps') {
         h += '<button class="btn primary big" data-act="setdone">✔ Série terminée</button>';
       } else if (P.mode === 'timer') {
-        h += '<div class="timer" id="ptime">' + mmss(P.t) + '</div>' + (P.side ? '<p class="muted" id="pside" style="text-align:center">Premier côté, puis le chrono vous prévient.</p>' : '') +
+        h += '<div class="timer" id="ptime">' + mmss(P.t) + '</div>' + (P.side ? '<p class="muted" id="pside" style="text-align:center">' + (P.sideDone ? '🔁 Changez de côté !' : 'Premier côté, puis un bip vous prévient.') + '</p>' : '') +
           '<div class="row"><button class="btn grow" data-act="tstop">Arrêter</button><button class="btn primary grow" data-act="setdone">✔ Terminé</button></div>';
       } else {
         var lab = d.type === 'time' ? (d.perSide ? d.secs + ' s de chaque côté' : d.secs + ' s') : d.mins + ' min';
@@ -504,6 +557,7 @@
         S = defaults(); safetyFirst(); render();
       }
     },
+    testsound: function () { unlockAudio(); sideSignal(); setTimeout(endSignal, 1100); },
     install: function () {
       if (!deferredInstall) return;
       deferredInstall.prompt();
@@ -515,10 +569,10 @@
       var d = P.items[P.i].dose;
       P.side = d.type === 'time' && !!d.perSide;
       P.total = d.type === 'time' ? d.secs * (d.perSide ? 2 : 1) : d.mins * 60;
-      P.t = P.total; P.mode = 'timer'; startTick(); renderPlayer();
+      P.t = P.total; P.mode = 'timer'; P.sideDone = false; startTick(); renderPlayer();
     },
     tstop: function () { stopTick(); P.mode = 'ready'; renderPlayer(); },
-    restplus: function () { P.t += 15; var el = $('#ptime'); if (el) el.textContent = mmss(P.t); },
+    restplus: function () { P.end += 15000; P.t = remaining(); showTime(); },
     restskip: function () { stopTick(); P.mode = 'ready'; renderPlayer(); },
     skip: function () { if (confirm('Passer cet exercice ?')) nextEx(); },
     quit: function () {
@@ -533,6 +587,7 @@
   };
 
   document.addEventListener('click', function (e) {
+    unlockAudio();
     var el = e.target.closest('[data-act]');
     if (el && actions[el.dataset.act]) { e.preventDefault(); actions[el.dataset.act](el); return; }
     if (e.target.id === 'overlay' && !(P || !S.settings.ack)) closeSheet();
@@ -543,6 +598,8 @@
     }
   });
   document.addEventListener('change', function (e) {
+    if (e.target.id === 'sawake') { S.settings.awake = e.target.checked; save(); if (e.target.checked) requestWake(); else releaseWake(); return; }
+    if (e.target.id === 'ssound') { S.settings.sound = e.target.checked; save(); if (e.target.checked) { unlockAudio(); beep(880, 0.15); } return; }
     if (e.target.id !== 'file' || !e.target.files[0]) return;
     var fr = new FileReader();
     fr.onload = function () {
@@ -557,10 +614,18 @@
   });
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; if (!P) render(); });
 
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      wake = null; waking = false; requestWake();
+      if (P && tick) step();
+    }
+  });
+
   function safetyFirst() { if (!S.settings.ack) safetySheet(true); }
 
   render();
   safetyFirst();
+  requestWake();
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () { }); });
   }

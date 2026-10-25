@@ -97,3 +97,6 @@ svg.fig .still{opacity:1}
 .chart .gl{stroke:var(--line);stroke-width:1}
 .legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);margin-top:4px}
 .legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+
+.chk{display:flex;gap:12px;align-items:center;font-weight:600;margin:12px 0}
+.chk input{width:24px;height:24px;flex:none;accent-color:var(--brand)}
