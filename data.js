@@ -431,3 +431,191 @@ window.DATA = {
     weight: "Pour perdre du poids durablement, visez une perte lente et régulière (de l'ordre de 0,25 à 0,5 kg par semaine), la marche presque tous les jours, un bon sommeil et une alimentation sans régime extrême. Un médecin ou un diététicien peut vous accompagner."
   }
 };
+
+/* ===== Matériel, échauffements et exercices sans matériel ===== */
+(function () {
+  var D = window.DATA, EXO = {};
+  D.groups.unshift('Échauffement');
+  D.equipment = [
+    { id: 'chaise', name: 'Chaise stable', short: 'chaise', def: true },
+    { id: 'table', name: 'Table ou plan de travail solide', short: 'table', def: true },
+    { id: 'tapis', name: 'Tapis de sol (ou serviette épaisse)', short: 'tapis', def: true },
+    { id: 'bouteilles', name: 'Objets du quotidien (bouteilles d\'eau, sac à dos)', short: 'bouteilles ou sac à dos', def: true },
+    { id: 'halteres', name: 'Haltères ou kettlebell', short: 'haltères', def: false },
+    { id: 'elastique', name: 'Bande élastique', short: 'élastique', def: false },
+    { id: 'velo', name: 'Vélo d\'appartement', short: 'vélo d\'appartement', def: false },
+    { id: 'velo_ext', name: 'Vélo d\'extérieur', short: 'vélo d\'extérieur', def: false },
+    { id: 'piscine', name: 'Accès à une piscine', short: 'piscine', def: false }
+  ];
+
+  var LEGS = [[92, 62, 108, 62], [92, 62, 92, 92], [92, 92, 92, 122], [108, 62, 108, 92], [108, 92, 108, 122]];
+  var FRONT = function (head, lines) { return { raw: { head: head, lines: lines.concat(LEGS) } }; };
+
+  D.exos.push({
+    id: 'marchplace', name: 'Marche sur place', group: 'Échauffement', icon: '🚶', warm: true,
+    dose: { type: 'time', sets: 1, secs: 60 }, rest: 0,
+    cap: ['Genou levé', 'Autre genou'],
+    steps: [
+      'Debout, pieds largeur du bassin, près d\'un appui si besoin.',
+      'Marchez sur place en levant les genoux à peine, bras qui balancent naturellement.',
+      'Augmentez très progressivement le rythme au fil de la durée.'
+    ],
+    tips: ['Le but est de réchauffer le corps : vous devez pouvoir parler sans effort.'],
+    stop: 'Douleur au genou, douleur qui descend dans la jambe ou essoufflement anormal.',
+    easier: 'Moins longtemps, ou assis : alternez les talons qui montent.',
+    yt: 'marche sur place échauffement douce',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [110, 120], a2: [70, 60], l: [40, 100], l2: [90, 90] },
+      { r: [100, 62], t: -90, h: -90, a: [70, 60], a2: [110, 120], l: [90, 90], l2: [40, 100] }
+    ]
+  });
+  D.exos.push({
+    id: 'shoulders', name: 'Cercles d\'épaules', group: 'Échauffement', icon: '🤷', warm: true,
+    dose: { type: 'reps', sets: 1, reps: 8 }, rest: 0,
+    cap: ['Épaules détendues', 'Épaules montées'],
+    steps: [
+      'Debout ou assis, bras relâchés le long du corps.',
+      'Montez les épaules vers les oreilles, reculez-les, puis redescendez en un grand cercle lent.',
+      'Faites 8 cercles vers l\'arrière, puis 8 vers l\'avant.'
+    ],
+    tips: ['Détendez la nuque et respirez calmement.'],
+    stop: 'Douleur vive à l\'épaule ou au cou.',
+    easier: 'Petits cercles, un seul sens.',
+    yt: 'cercles d\'épaules échauffement',
+    frames: [
+      FRONT([100, 13], [[100, 24, 100, 62], [88, 26, 112, 26], [88, 26, 84, 46], [84, 46, 84, 66], [112, 26, 116, 46], [116, 46, 116, 66]]),
+      FRONT([100, 16], [[100, 27, 100, 62], [88, 21, 112, 21], [88, 21, 84, 41], [84, 41, 84, 61], [112, 21, 116, 41], [116, 41, 116, 61]])
+    ]
+  });
+  D.exos.push({
+    id: 'armcircles', name: 'Cercles de bras', group: 'Échauffement', icon: '🔄', warm: true,
+    dose: { type: 'reps', sets: 1, reps: 10 }, rest: 0,
+    cap: ['Bras à l\'horizontale', 'Bras levés en diagonale'],
+    steps: [
+      'Debout, bras écartés à hauteur d\'épaules.',
+      'Dessinez de petits cercles avec les bras, puis de plus en plus grands.',
+      'Faites 10 cercles vers l\'avant puis 10 vers l\'arrière.'
+    ],
+    tips: ['Gardez le buste droit et les épaules basses.'],
+    stop: 'Douleur à l\'épaule.',
+    easier: 'Cercles plus petits, bras plus bas.',
+    yt: 'cercles de bras échauffement épaules',
+    frames: [
+      FRONT([100, 13], [[100, 24, 100, 62], [88, 26, 112, 26], [88, 26, 68, 28], [68, 28, 48, 30], [112, 26, 132, 28], [132, 28, 152, 30]]),
+      FRONT([100, 13], [[100, 24, 100, 62], [88, 26, 112, 26], [88, 26, 76, 14], [76, 14, 64, 2], [112, 26, 124, 14], [124, 14, 136, 2]])
+    ]
+  });
+  D.exos.push({
+    id: 'chestopen', name: 'Ouverture de la poitrine', group: 'Échauffement', icon: '🤗', warm: true,
+    dose: { type: 'reps', sets: 1, reps: 10 }, rest: 0,
+    cap: ['Bras croisés devant', 'Bras ouverts en arrière'],
+    steps: [
+      'Debout, croisez les bras devant vous en vous arrondissant légèrement.',
+      'Ouvrez les bras largement sur les côtés en poussant la poitrine vers l\'avant, sans cambrer le bas du dos.',
+      'Revenez en croisant les bras, en soufflant.'
+    ],
+    tips: ['Le mouvement vient des épaules et du haut du dos, pas du bas du dos.'],
+    stop: 'Douleur à l\'épaule ou dans le dos.',
+    easier: 'Mouvement plus petit.',
+    yt: 'ouverture de poitrine échauffement',
+    frames: [
+      FRONT([100, 13], [[100, 24, 100, 62], [88, 26, 112, 26], [88, 26, 92, 40], [92, 40, 106, 37], [112, 26, 108, 40], [108, 40, 94, 37]]),
+      FRONT([100, 13], [[100, 24, 100, 62], [88, 26, 112, 26], [88, 26, 68, 28], [68, 28, 48, 30], [112, 26, 132, 28], [132, 28, 152, 30]])
+    ]
+  });
+  D.exos.push({
+    id: 'pelvictilt', name: 'Bascule du bassin (allongé)', group: 'Échauffement', icon: '⚖️', warm: true,
+    dose: { type: 'reps', sets: 1, reps: 10 }, rest: 0, eq: ['tapis'],
+    noeq: 'Sans tapis : allongez-vous sur une serviette de bain épaisse, une couette pliée ou une moquette.',
+    cap: ['Bas du dos légèrement creusé', 'Bas du dos plaqué au sol'],
+    steps: [
+      'Allongé sur le dos, genoux pliés, pieds à plat, bras le long du corps.',
+      'En soufflant, rentrez le ventre et plaquez doucement le bas du dos au sol (le bassin bascule).',
+      'En inspirant, relâchez sans creuser exagérément. Mouvement lent et petit.'
+    ],
+    tips: ['Très doux pour le bas du dos : il prépare les muscles profonds du ventre.'],
+    stop: 'Douleur qui augmente ou qui descend dans la jambe.',
+    easier: 'Mouvement encore plus petit.',
+    yt: 'bascule du bassin allongé exercice dos',
+    frames: [
+      { r: [90, 122], t: 180, h: 180, c: 4, a: [-15, -15], l: [-55, 60] },
+      { r: [90, 122], t: 180, h: 180, c: 0, a: [-15, -15], l: [-55, 60] }
+    ]
+  });
+  D.exos.push({
+    id: 'wallrow', name: 'Tirage coudes en arrière contre le mur (sans matériel)', group: 'Haut du corps', icon: '🧱',
+    dose: { type: 'reps', sets: 3, reps: 10 }, rest: 45,
+    cap: ['Bras devant', 'Coudes en arrière'],
+    steps: [
+      'Debout, dos à environ 10 cm d\'un mur, genoux souples, bras tendus devant vous.',
+      'Pliez les coudes et poussez-les en arrière contre le mur, omoplates serrées, en tenant 2 secondes.',
+      'Revenez lentement. Gardez le buste droit.'
+    ],
+    tips: ['Remplace le tirage à l\'élastique : le même mouvement, sans matériel.'],
+    stop: 'Douleur dans l\'épaule ou le dos.',
+    easier: 'Tenez 1 seconde seulement.',
+    yt: 'rétraction omoplates debout contre mur',
+    frames: [
+      { r: [76, 62], t: -90, h: -90, a: [0, 0], l: [90, 90], props: [[60, 8, 60, 122]] },
+      { r: [76, 62], t: -90, h: -90, a: [120, 0], l: [90, 90], props: [[60, 8, 60, 122]] }
+    ]
+  });
+  D.exos.push({
+    id: 'selfcurl', name: 'Curl en auto-résistance (sans matériel)', group: 'Haut du corps', icon: '💪',
+    dose: { type: 'reps', sets: 3, reps: 8, perSide: true }, rest: 45,
+    cap: ['Bras tendu', 'Avant-bras plié'],
+    steps: [
+      'Debout ou assis, coude collé au corps, paume vers le haut.',
+      'Avec l\'autre main, appuyez sur le dessus de l\'avant-bras pour offrir une résistance.',
+      'Pliez le coude lentement (3 secondes) contre cette résistance, puis redescendez lentement. Changez de bras.'
+    ],
+    tips: ['Réglez la résistance de la main libre : l\'effort doit être sérieux mais contrôlé.'],
+    stop: 'Douleur au coude ou à l\'épaule.',
+    easier: 'Moins de résistance.',
+    yt: 'curl biceps auto résistance sans matériel',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [70, 80], l: [90, 90] },
+      { r: [100, 62], t: -90, h: -90, a: [70, -70], l: [90, 90] }
+    ]
+  });
+
+  D.exos.forEach(function (e) { EXO[e.id] = e; });
+  function eq(ids, list, noeq, sub) {
+    ids.split(' ').forEach(function (id) {
+      var e = EXO[id]; if (!e) return;
+      e.eq = list.split(' ');
+      if (noeq) e.noeq = noeq;
+      if (sub) e.sub = sub;
+    });
+  }
+  var FLOOR = 'Sans tapis : utilisez une serviette de bain épaisse, une couette pliée ou une moquette.';
+  var SUPPORT = 'Sans chaise ni table : appuyez-vous d\'une main contre un mur.';
+  var WEIGHT = 'Sans haltères ni objets lourds : faites le même mouvement avec les mains vides, plus lentement (3 secondes à la descente).';
+  
+  eq('catcamel sphinx hamstring piriformis bridge slr birddog deadbug', 'tapis', FLOOR);
+  eq('sitstand', 'chaise', 'Sans chaise : utilisez le bord d\'un canapé ou d\'un lit stable, assez haut.');
+  eq('abduction calf kneecurl', 'chaise table', SUPPORT);
+  eq('plank', 'table', 'Sans table : posez les mains contre un mur, corps incliné (un peu moins difficile).');
+  eq('row', 'elastique', 'Sans élastique : poussez les coudes en arrière contre un mur.', 'wallrow');
+  eq('curl', 'halteres bouteilles', 'Sans haltères ni objets : résistez avec l\'autre main (curl en auto-résistance).', 'selfcurl');
+  eq('bike', 'velo'); eq('bikeout', 'velo_ext'); eq('swim', 'piscine');
+
+  function S(id) { return D.sessions.filter(function (s) { return s.id === id; })[0]; }
+  S('douce').items = [
+    { id: 'pelvictilt', w: true }, { id: 'shoulders', w: true, reps: 6 }, { id: 'catcamel', w: true, sets: 1, reps: 8 },
+    { id: 'sphinx', sets: 2, secs: 20 }, { id: 'hamstring', sets: 1, secs: 30 }, { id: 'piriformis', sets: 1, secs: 30 }, { id: 'bridge', sets: 1, reps: 8 }
+  ];
+  S('A').items = [
+    { id: 'marchplace', w: true }, { id: 'pelvictilt', w: true }, { id: 'catcamel', w: true, sets: 1, reps: 8 },
+    { id: 'bridge' }, { id: 'slr' }, { id: 'sitstand' }, { id: 'abduction' }, { id: 'calf' }, { id: 'kneecurl' }, { id: 'hamstring', sets: 1 }
+  ];
+  S('B').items = [
+    { id: 'marchplace', w: true }, { id: 'shoulders', w: true }, { id: 'armcircles', w: true }, { id: 'chestopen', w: true }, { id: 'catcamel', w: true, sets: 1, reps: 8 },
+    { id: 'wallpush' }, { id: 'row' }, { id: 'curl' }, { id: 'deadbug' }, { id: 'birddog' }, { id: 'plank' }
+  ];
+  S('C').items = [
+    { id: 'shoulders', w: true }, { id: 'chestopen', w: true }, { id: 'walk', mins: 20 },
+    { id: 'hamstring' }, { id: 'piriformis' }, { id: 'sphinx', sets: 2 }, { id: 'catcamel', sets: 1, reps: 8 }
+  ];
+
+})();

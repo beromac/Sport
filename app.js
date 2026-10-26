@@ -27,8 +27,10 @@
   function mmss(t) { t = Math.max(0, Math.round(t)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
 
   /* ---------- données ---------- */
+  function defaultHave() { return (D.equipment || []).filter(function (e) { return e.def; }).map(function (e) { return e.id; }); }
   function defaults() {
     return { profile: { name: '', height: '', goal: '' }, weights: [], waist: [], pains: [], sessions: [], activities: [],
+      equip: { have: defaultHave(), custom: [], weights: '' }, variant: {},
       settings: { ack: false, rest: 45, awake: true, sound: true }, videos: {} };
   }
   /* anciennes versions : le tour de taille était rangé dans la pesée */
@@ -51,6 +53,11 @@
       }
     } catch (e) { /* données illisibles : on repart de zéro */ }
     if (!Array.isArray(d.activities)) d.activities = [];
+    if (!d.equip || typeof d.equip !== 'object') d.equip = { have: defaultHave(), custom: [], weights: '' };
+    if (!Array.isArray(d.equip.have)) d.equip.have = defaultHave();
+    if (!Array.isArray(d.equip.custom)) d.equip.custom = [];
+    if (typeof d.equip.weights !== 'string') d.equip.weights = '';
+    if (!d.variant || typeof d.variant !== 'object') d.variant = {};
     return d;
   }
   var S = load();
@@ -285,6 +292,7 @@
         return '<option value="' + v + '"' + (S.settings.rest === v ? ' selected' : '') + '>' + v + ' secondes</option>';
       }).join('') + '</select>' +
       '<button class="btn primary big" data-act="saveprofile" style="margin-top:12px">Enregistrer</button></section>' +
+      equipCard() +
       '<section class="card"><h2>Écran et son</h2>' +
       '<label class="chk"><input type="checkbox" id="sawake"' + (S.settings.awake !== false ? ' checked' : '') + '> Garder l\'écran allumé quand l\'application est ouverte</label>' +
       '<label class="chk"><input type="checkbox" id="ssound"' + (S.settings.sound !== false ? ' checked' : '') + '> Bip à la fin du chrono et au changement de côté</label>' +
@@ -295,7 +303,59 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v4 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v5 · ne remplace pas un avis médical</p>';
+  }
+
+  /* ---------- matériel et versions « avec / sans matériel » ---------- */
+  function eqInfo(id) { return (D.equipment || []).filter(function (e) { return e.id === id; })[0]; }
+  function eqShort(id) { var e = eqInfo(id); return e ? e.short : id; }
+  function hasEq(id) {
+    return S.equip.have.indexOf(id) >= 0 || S.equip.custom.some(function (c) { return c.type === id; });
+  }
+  function eqOK(ex) { return !ex.eq || ex.eq.some(hasEq); }
+  function eqNames(ex) { return ex.eq.map(eqShort).join(' ou '); }
+  function effNoEq(ex) {
+    var m = S.variant[ex.id];
+    if (m === 'eq') return false;
+    if (m === 'noeq') return true;
+    return !eqOK(ex);
+  }
+  var noeqCache = {};
+  function resolveEx(ex) {
+    if (!ex.eq || ex.dose.type === 'cardio' || !effNoEq(ex)) return ex;
+    if (ex.sub && EX[ex.sub]) return EX[ex.sub];
+    if (!noeqCache[ex.id]) noeqCache[ex.id] = Object.assign({}, ex, {
+      loaded: false, noeqView: true, name: ex.name + ' (sans matériel)',
+      steps: ex.noeq ? [ex.noeq].concat(ex.steps) : ex.steps
+    });
+    return noeqCache[ex.id];
+  }
+  function eqBlock(ex) {
+    if (!ex.eq) return '';
+    var have = eqOK(ex), miss = have ? '' : ' (non coché dans Profil)';
+    if (ex.dose.type === 'cardio') return '<div class="banner ' + (have ? 'ok' : 'warn') + '">🧰 Matériel : ' + esc(eqNames(ex)) + miss + '</div>';
+    var ne = effNoEq(ex);
+    return '<div class="banner ok">🧰 Matériel : ' + esc(eqNames(ex)) + miss + '</div>' +
+      '<label for="xvar">Version à faire</label><select id="xvar" data-id="' + ex.id + '"><option value="eq"' + (ne ? '' : ' selected') + '>Avec matériel</option><option value="noeq"' + (ne ? ' selected' : '') + '>Sans matériel</option></select>' +
+      (ex.noeq ? '<details' + (ne ? ' open' : '') + '><summary>Version sans matériel</summary><p>' + esc(ex.noeq) + (ex.sub && EX[ex.sub] ? ' Dans les séances, cet exercice est remplacé par « ' + esc(EX[ex.sub].name) + ' ».' : '') + '</p></details>' : '');
+  }
+  function equipCard() {
+    var eq = S.equip;
+    var h = '<section class="card"><h2>Mon matériel</h2><p class="muted">Cochez ce que vous avez à la maison. Quand un exercice demande du matériel que vous n\'avez pas, il passe automatiquement en version « sans matériel ». Vous pouvez aussi choisir la version à la main sur chaque exercice.</p>';
+    h += D.equipment.map(function (e) {
+      return '<label class="chk"><input type="checkbox" data-eq="' + e.id + '"' + (eq.have.indexOf(e.id) >= 0 ? ' checked' : '') + '> ' + esc(e.name) + '</label>';
+    }).join('');
+    h += '<label for="eqweights">Charges disponibles (kg), facultatif</label><input id="eqweights" type="text" maxlength="60" value="' + esc(eq.weights) + '" placeholder="ex. 2, 4, 8">';
+    h += '<h3>Ajouter un autre matériel</h3>';
+    if (eq.custom.length) h += '<ul class="list">' + eq.custom.map(function (c) {
+      var t = eqInfo(c.type);
+      return '<li><div class="grow"><b>' + esc(c.name) + '</b><div class="muted">' + (t ? 'compte comme : ' + esc(t.short) : 'noté seulement') + '</div></div><button class="btn small danger" data-act="delcustom" data-k="' + esc(c.k) + '" aria-label="Supprimer">🗑</button></li>';
+    }).join('') + '</ul>';
+    h += '<label for="cname">Nom (ex. kettlebell 8 kg)</label><input id="cname" type="text" maxlength="40">' +
+      '<label for="ctype">Il remplace…</label><select id="ctype">' + D.equipment.map(function (e) { return '<option value="' + e.id + '">' + esc(e.short) + '</option>'; }).join('') + '<option value="">rien (juste le noter)</option></select>' +
+      '<button class="btn big" data-act="addcustom" style="margin-top:10px">➕ Ajouter</button>' +
+      '<button class="btn big" data-act="resetvar" style="margin-top:8px">Remettre les versions en automatique</button></section>';
+    return h;
   }
 
   /* ---------- résultats réalisés, activités libres, progrès ---------- */
@@ -420,7 +480,7 @@
     return out.sort(function (a, b) { return a.d < b.d ? -1 : (a.d > b.d ? 1 : 0); });
   }
   function progHtml() {
-    var list = D.exos.filter(function (e) { return recs(e.id).length; });
+    var list = D.exos.filter(function (e) { return !e.warm && recs(e.id).length; });
     if (!list.length) return '<section class="card"><h2>Progrès</h2><p class="muted">Terminez une séance ou ajoutez une activité libre : vos résultats apparaîtront ici, exercice par exercice.</p></section>';
     if (!ui.prog || !list.some(function (e) { return e.id === ui.prog; })) ui.prog = list[0].id;
     var ex = EX[ui.prog], unit = unitOf(ex).trim(), rs = recs(ui.prog);
@@ -463,6 +523,7 @@
       figBox(ex) + '<p><span class="pill">' + esc(ex.group) + '</span> <b>' + esc(doseLabel(ex.dose)) + '</b></p>' +
       '<h3>Comment faire</h3><ol>' + ex.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
     if (ex.tips && ex.tips.length) h += '<div class="banner ok">💡 ' + esc(ex.tips.join(' ')) + '</div>';
+    h += eqBlock(ex);
     h += '<div class="banner bad">⚠️ <b>Arrêtez si :</b> ' + esc(ex.stop) + '</div>';
     h += '<details><summary>Version plus facile</summary><p>' + esc(ex.easier) + '</p></details>';
     h += '<button class="btn big" data-act="addact" data-id="' + id + '" style="margin-bottom:8px">➕ Noter que je l\'ai fait</button>';
@@ -474,14 +535,27 @@
   }
 
   function previewSheet(id) {
-    var s = sessionObj(id);
+    var s = sessionObj(id), adapted = 0, need = [];
+    var rs = s.items.map(function (it) {
+      var o = EX[it.id], r = resolveEx(o);
+      if (o.eq && o.dose.type !== 'cardio') {
+        if (effNoEq(o)) adapted++;
+        else o.eq.forEach(function (q) { if (hasEq(q) && eqInfo(q) && !eqInfo(q).def && need.indexOf(q) < 0) need.push(q); });
+      }
+      return { it: it, o: o, ex: r, warm: !!(it.w || o.warm) };
+    });
+    function row(r) {
+      var dd = doseOf(r.ex, r.ex.dose.type === r.o.dose.type ? r.it : null);
+      return '<li><button class="chip" data-act="exo" data-id="' + r.o.id + '" style="border:0;background:none;padding:0;text-align:left;flex:1"><b>' + r.ex.icon + ' ' + esc(r.ex.name) + '</b><div class="muted">' + esc(doseLabel(dd)) + '</div></button></li>';
+    }
+    var warm = rs.filter(function (r) { return r.warm; }), main = rs.filter(function (r) { return !r.warm; });
     var h = '<div class="top"><h2 style="margin:0">' + esc(s.name) + '</h2><button class="x" data-act="close" aria-label="Fermer">✕</button></div>' +
-      '<p class="muted">' + esc(s.desc) + ' Environ ' + estMinutes(s.items) + ' min.</p><ul class="list">' +
-      s.items.map(function (it) {
-        var ex = EX[it.id];
-        return '<li><button class="chip" data-act="exo" data-id="' + ex.id + '" style="border:0;background:none;padding:0;text-align:left;flex:1"><b>' + ex.icon + ' ' + esc(ex.name) + '</b><div class="muted">' + esc(doseLabel(doseOf(ex, it))) + '</div></button></li>';
-      }).join('') + '</ul>' +
-      '<div class="banner warn">Échauffez-vous, restez à 3/10 de douleur maximum et arrêtez si la douleur descend dans la jambe.</div>' +
+      '<p class="muted">' + esc(s.desc) + ' Environ ' + estMinutes(s.items) + ' min.</p>';
+    if (need.length) h += '<p class="muted">🧰 Matériel utilisé : ' + esc(need.map(eqShort).join(', ')) + '</p>';
+    if (adapted) h += '<p class="muted">♻️ ' + adapted + ' exercice(s) adapté(s) sans matériel (modifiable dans Profil → Mon matériel).</p>';
+    if (warm.length) h += '<h3>🔥 Échauffement</h3><ul class="list">' + warm.map(row).join('') + '</ul>';
+    h += '<h3>' + (warm.length ? '💪 Séance' : 'Exercices') + '</h3><ul class="list">' + main.map(row).join('') + '</ul>' +
+      '<div class="banner warn">Restez à 3/10 de douleur maximum pendant l\'effort et arrêtez si la douleur descend dans la jambe.</div>' +
       '<button class="btn primary big" data-act="start" data-id="' + id + '">▶ Démarrer la séance</button>';
     openSheet(h);
   }
@@ -576,7 +650,10 @@
   }
   function startSession(id) {
     var s = sessionObj(id);
-    P = { sid: id, name: s.name, items: s.items.map(function (it) { return { ex: EX[it.id], dose: doseOf(EX[it.id], it) }; }),
+    P = { sid: id, name: s.name, items: s.items.map(function (it) {
+        var o = EX[it.id], r = resolveEx(o);
+        return { ex: r, orig: o, warm: !!(it.w || o.warm), dose: doseOf(r, r.dose.type === o.dose.type ? it : null) };
+      }),
       i: 0, set: 1, mode: 'ready', t: 0, total: 0, side: false, sideDone: false, end: 0, lastBeep: null, started: Date.now(), done: [], res: {} };
     requestWake();
     renderPlayer();
@@ -612,7 +689,7 @@
       return;
     }
     var it = P.items[P.i], ex = it.ex, d = it.dose;
-    var h = '<div class="top"><div class="grow"><b>' + esc(P.name) + '</b><div class="muted">Exercice ' + (P.i + 1) + ' sur ' + n + '</div></div><button class="x" data-act="quit" aria-label="Quitter">✕</button></div>' +
+    var h = '<div class="top"><div class="grow"><b>' + esc(P.name) + '</b><div class="muted">Exercice ' + (P.i + 1) + ' sur ' + n + (it.warm ? ' · <b>🔥 Échauffement</b>' : '') + '</div></div><button class="x" data-act="quit" aria-label="Quitter">✕</button></div>' +
       '<div class="bar"><i style="width:' + Math.round(P.i / n * 100) + '%"></i></div>';
     if (P.mode === 'rest') {
       var next = ex;
@@ -623,9 +700,13 @@
       h += '<h2>' + ex.icon + ' ' + esc(ex.name) + '</h2>' + figBox(ex) +
         '<p style="text-align:center"><b>' + esc(doseLabel(d)) + '</b>' + (d.type !== 'cardio' ? ' · série ' + P.set + '/' + d.sets : '') + '</p>';
       if (d.type === 'cardio' && d.mins >= 10 && P.mode === 'ready') {
-        h += '<label for="palt" style="margin:0 0 4px">Activité du jour</label><select id="palt" style="margin-bottom:10px">' + D.exos.filter(function (e) { return e.dose.type === 'cardio'; }).map(function (e) {
+        h += '<label for="palt" style="margin:0 0 4px">Activité du jour</label><select id="palt" style="margin-bottom:10px">' + D.exos.filter(function (e) { return e.dose.type === 'cardio' && (eqOK(e) || e.id === ex.id); }).map(function (e) {
           return '<option value="' + e.id + '"' + (e.id === ex.id ? ' selected' : '') + '>' + esc(e.name) + '</option>';
         }).join('') + '</select>';
+      }
+      if (it.orig && it.orig.eq && d.type !== 'cardio' && P.mode === 'ready') {
+        var ne = effNoEq(it.orig);
+        h += '<label for="pvar" style="margin:0 0 4px">Version</label><select id="pvar" style="margin-bottom:10px"><option value="eq"' + (ne ? '' : ' selected') + '>Avec matériel (' + esc(eqNames(it.orig)) + ')</option><option value="noeq"' + (ne ? ' selected' : '') + '>Sans matériel</option></select>';
       }
       var plan = plannedOf(d), pl = d.type === 'reps' ? 'Répétitions réalisées' : (d.type === 'time' ? 'Secondes réalisées' : 'Minutes réalisées');
       if (d.perSide && d.type !== 'cardio') pl += ' (par côté)';
@@ -740,6 +821,18 @@
     delact: function (el) {
       if (confirm('Supprimer cette activité ?')) { S.activities = S.activities.filter(function (a) { return a.k !== el.dataset.k; }); save(); render(); }
     },
+    addcustom: function () {
+      var name = $('#cname').value.trim().slice(0, 40);
+      if (!name) { alert('Indiquez le nom du matériel.'); return; }
+      S.equip.custom.push({ k: String(Date.now()), name: name, type: $('#ctype').value });
+      save(); render(); toast('✔ Matériel ajouté : ' + name);
+    },
+    delcustom: function (el) {
+      if (confirm('Supprimer ce matériel ?')) { S.equip.custom = S.equip.custom.filter(function (c) { return c.k !== el.dataset.k; }); save(); render(); }
+    },
+    resetvar: function () {
+      if (confirm('Remettre toutes les versions « avec / sans matériel » en automatique ?')) { S.variant = {}; save(); toast('✔ Versions remises en automatique'); }
+    },
     testsound: function () { unlockAudio(); sideSignal(); setTimeout(endSignal, 1100); },
     install: function () {
       if (!deferredInstall) return;
@@ -784,6 +877,17 @@
     }
   });
   document.addEventListener('change', function (e) {
+    if (e.target.dataset && e.target.dataset.eq) {
+      var q = e.target.dataset.eq, i = S.equip.have.indexOf(q);
+      if (e.target.checked && i < 0) S.equip.have.push(q);
+      if (!e.target.checked && i >= 0) S.equip.have.splice(i, 1);
+      save(); return;
+    }
+    if (e.target.id === 'eqweights') { S.equip.weights = e.target.value.trim().slice(0, 60); save(); return; }
+    if (e.target.id === 'xvar') { S.variant[e.target.dataset.id] = e.target.value; save(); exoSheet(e.target.dataset.id); return; }
+    if (e.target.id === 'pvar' && P) {
+      var cur = P.items[P.i]; S.variant[cur.orig.id] = e.target.value; save(); cur.ex = resolveEx(cur.orig); renderPlayer(); return;
+    }
     if (e.target.id === 'aex') { $('#afields').innerHTML = actFields(e.target.value); return; }
     if (e.target.id === 'pgx') { ui.prog = e.target.value; render(); return; }
     if (e.target.id === 'palt' && P) { P.items[P.i].ex = EX[e.target.value]; renderPlayer(); return; }
