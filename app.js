@@ -393,7 +393,7 @@
       equipCard() +
       '<section class="card"><h2>Écran et son</h2>' +
       '<label class="chk"><input type="checkbox" id="sawake"' + (S.settings.awake !== false ? ' checked' : '') + '> Garder l\'écran allumé quand l\'application est ouverte</label>' +
-      '<label class="chk"><input type="checkbox" id="ssound"' + (S.settings.sound !== false ? ' checked' : '') + '> Bip à la fin du chrono et au changement de côté</label>' +
+      '<label class="chk"><input type="checkbox" id="ssound"' + (S.settings.sound !== false ? ' checked' : '') + '> Sons : début du chrono, série faite, fin du chrono et changement de côté</label>' +
       '<button class="btn big" data-act="testsound">🔊 Tester le son</button><p class="muted">Si vous n\'entendez rien, montez le volume multimédia du téléphone.</p></section>' +
       '<section class="card"><h2>Sauvegarde</h2><p class="muted">Vos données restent sur ce téléphone. Exportez-les de temps en temps.</p>' +
       '<div class="row"><button class="btn grow" data-act="export">⬇ Exporter</button><button class="btn grow" data-act="import">⬆ Importer</button></div>' +
@@ -401,7 +401,7 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v8 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v9 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- matériel et versions « avec / sans matériel » ---------- */
@@ -707,8 +707,30 @@
       if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     } catch (e) { /* ignoré */ }
   }
+  /* secours : si l'audio du navigateur est bloqué, on joue un petit fichier son */
+  var wavCache = {};
+  function wavUrl(freq, dur) {
+    var k = freq + '_' + dur; if (wavCache[k]) return wavCache[k];
+    var sr = 16000, n = Math.round(sr * dur), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf), i;
+    function ws(o, s) { for (var j = 0; j < s.length; j++) v.setUint8(o + j, s.charCodeAt(j)); }
+    ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ws(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 2, true);
+    for (i = 0; i < n; i++) {
+      var env = Math.min(1, i / (sr * 0.01), (n - i) / (sr * 0.03));
+      v.setInt16(44 + i * 2, Math.round(Math.sin(2 * Math.PI * freq * i / sr) * env * 0.7 * 32767), true);
+    }
+    var bytes = new Uint8Array(buf), s = ''; for (i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return (wavCache[k] = 'data:audio/wav;base64,' + btoa(s));
+  }
+  function htmlBeep(freq, dur, when, vol) {
+    try {
+      var a = new Audio(wavUrl(freq, dur + 0.05)); a.volume = Math.min(1, (vol || 0.6) + 0.4);
+      setTimeout(function () { var p = a.play(); if (p && p.catch) p.catch(function () { /* ignoré */ }); }, (when || 0) * 1000);
+    } catch (e) { /* ignoré */ }
+  }
   function beep(freq, dur, when, vol) {
-    if (!audioCtx || S.settings.sound === false) return;
+    if (S.settings.sound === false) return;
+    if (!audioCtx || audioCtx.state !== 'running') { unlockAudio(); htmlBeep(freq, dur, when, vol); return; }
     try {
       var t0 = audioCtx.currentTime + (when || 0), o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = 'sine'; o.frequency.value = freq;
@@ -719,6 +741,8 @@
     } catch (e) { /* ignoré */ }
   }
   function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* ignoré */ } }
+  function goSignal() { beep(988, 0.18, 0); buzz(80); }
+  function setSignal() { beep(784, 0.12, 0); beep(1047, 0.2, 0.15); buzz([90, 60, 90]); }
   function countSignal() { beep(880, 0.12); }
   function sideSignal() { beep(660, 0.2, 0); beep(990, 0.2, 0.3); beep(660, 0.2, 0.6); buzz([200, 100, 200, 100, 200]); }
   function endSignal() { beep(880, 0.2, 0); beep(880, 0.2, 0.3); beep(1175, 0.6, 0.6); buzz([400, 150, 400]); }
@@ -966,7 +990,7 @@
     resetvar: function () {
       if (confirm('Remettre toutes les versions « avec / sans matériel » en automatique ?')) { S.variant = {}; save(); toast('✔ Versions remises en automatique'); }
     },
-    testsound: function () { unlockAudio(); sideSignal(); setTimeout(endSignal, 1100); },
+    testsound: function () { unlockAudio(); goSignal(); setTimeout(setSignal, 500); setTimeout(sideSignal, 1200); setTimeout(endSignal, 2300); },
     install: function () {
       if (!deferredInstall) return;
       deferredInstall.prompt();
@@ -975,13 +999,13 @@
     /* lecteur */
     setdone: function () {
       var v = readDone(false); if (v === null) return;
-      stopTick(); recordSet(v); finishSet();
+      stopTick(); recordSet(v); setSignal(); finishSet();
     },
     tstart: function () {
       var d = P.items[P.i].dose;
       P.side = d.type === 'time' && !!d.perSide;
       P.total = d.type === 'time' ? d.secs * (d.perSide ? 2 : 1) : d.mins * 60;
-      P.t = P.total; P.mode = 'timer'; P.sideDone = false; startTick(); renderPlayer();
+      P.t = P.total; P.mode = 'timer'; P.sideDone = false; goSignal(); startTick(); renderPlayer();
     },
     tstop: function () { stopTick(); P.mode = 'ready'; renderPlayer(); },
     restplus: function () { P.end += 15000; P.t = remaining(); showTime(); },
