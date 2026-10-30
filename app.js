@@ -400,7 +400,7 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v6 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v7 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- matériel et versions « avec / sans matériel » ---------- */
@@ -510,6 +510,7 @@
   }
   function validDate(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || '') && d <= today(); }
   function actMins(a) {
+    if (a.coach) return a.mins || 0;
     var ex = EX[a.id]; if (!ex) return 0;
     var k = ex.dose.perSide ? 2 : 1;
     if (ex.dose.type === 'cardio') return a.mins || 0;
@@ -545,6 +546,7 @@
     }).join('');
     openSheet('<div class="top"><h2 style="margin:0">Ajouter une activité</h2><button class="x" data-act="close" aria-label="Fermer">✕</button></div>' +
       '<p class="muted">Notez ce que vous avez fait en dehors des séances prévues, avec les quantités réellement faites.</p>' +
+      '<button class="btn" data-act="coachsheet" style="width:100%;margin-bottom:4px">🏋️ C\'était une séance Coach (méthode Lafay)</button>' +
       '<label for="aex">Exercice</label><select id="aex">' + opts + '</select>' +
       '<label for="adate">Date</label><input id="adate" type="date" value="' + today() + '" max="' + today() + '">' +
       '<div id="afields" style="margin-top:4px">' + actFields(id) + '</div>' +
@@ -554,6 +556,7 @@
     var list = S.activities.slice().sort(function (a, b) { return a.d < b.d ? 1 : (a.d > b.d ? -1 : (a.k < b.k ? 1 : -1)); }).slice(0, 40);
     return '<section class="card"><div class="row sb"><h2 style="margin:0">Activités libres</h2><button class="btn small" data-act="addact">➕ Ajouter</button></div>' +
       (list.length ? '<ul class="list">' + list.map(function (a) {
+        if (a.coach) return '<li><div class="grow"><b>🏋️ ' + esc(a.title || 'Séance Coach Lafay') + '</b><div class="muted">' + fmtDate(a.d) + ' · Coach Lafay · ' + a.mins + ' min' + (a.note ? ' · ' + esc(a.note) : '') + '</div></div><button class="btn small danger" data-act="delact" data-k="' + esc(a.k) + '" aria-label="Supprimer">🗑</button></li>';
         var ex = EX[a.id]; if (!ex) return '';
         return '<li><div class="grow"><b>' + ex.icon + ' ' + esc(ex.name) + '</b><div class="muted">' + fmtDate(a.d) + ' · ' + esc(actLabel(a)) + '</div></div><button class="btn small danger" data-act="delact" data-k="' + esc(a.k) + '" aria-label="Supprimer">🗑</button></li>';
       }).join('') + '</ul>' : '<p class="muted">Aucune activité pour l\'instant. Elles s\'ajoutent à vos minutes et à vos jours actifs de la semaine.</p>') + '</section>';
@@ -929,6 +932,23 @@
         }
       }
       S.activities.push(a); save(); closeSheet(); render(); toast('✔ Ajouté : ' + ex.name);
+    },
+    coachsheet: function () {
+      openSheet('<div class="top"><h2 style="margin:0">Séance Coach (Lafay)</h2><button class="x" data-act="close" aria-label="Fermer">✕</button></div>' +
+        '<p class="muted">Notez une séance faite avec l\'application Coach (méthode Lafay). Elle compte dans vos minutes et vos jours actifs.</p>' +
+        '<label for="ctitle">Nom de la séance</label><input id="ctitle" type="text" maxlength="60" placeholder="ex. Séance 3 – niveau 1">' +
+        '<label for="adate">Date</label><input id="adate" type="date" value="' + today() + '" max="' + today() + '">' +
+        '<label for="cmin">Durée (minutes)</label><input id="cmin" type="text" inputmode="numeric" placeholder="ex. 45">' +
+        '<label for="cnote">Remarque (facultatif)</label><input id="cnote" type="text" maxlength="120" placeholder="ex. pompes : 3 × 12, dips plus durs">' +
+        '<button class="btn primary big" data-act="savecoach" style="margin-top:16px">Enregistrer</button>' +
+        '<button class="btn big" data-act="addact" style="margin-top:8px">← Choisir un exercice à la place</button>');
+    },
+    savecoach: function () {
+      var dt = $('#adate').value, m = num($('#cmin').value);
+      if (!validDate(dt)) { alert('Choisissez une date valide (pas dans le futur).'); return; }
+      if (m == null || m < 1 || m > 600 || Math.round(m) !== m) { alert('Indiquez une durée en minutes (1 à 600).'); return; }
+      S.activities.push({ k: String(Date.now()), d: dt, coach: 'lafay', title: $('#ctitle').value.trim() || 'Séance Coach Lafay', mins: m, note: $('#cnote').value.trim() });
+      save(); closeSheet(); render(); toast('✔ Séance Coach ajoutée');
     },
     delact: function (el) {
       if (confirm('Supprimer cette activité ?')) { S.activities = S.activities.filter(function (a) { return a.k !== el.dataset.k; }); save(); render(); }

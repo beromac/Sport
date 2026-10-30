@@ -1,5 +1,5 @@
 /* Service worker : fonctionne hors-ligne. Changez VERSION à chaque mise à jour de l'app. */
-var VERSION = 'fitsante-v6';
+var VERSION = 'fitsante-v7';
 var FILES = ['./', 'index.html', 'style.css', 'data.js', 'figure.js', 'app.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
 
