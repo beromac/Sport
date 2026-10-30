@@ -157,7 +157,8 @@
   function viewHome() {
     var p = todayPain(), rec = recommendation(p);
     var wk = weekStart(today());
-    var wkSessions = S.sessions.filter(function (s) { return weekStart(s.d) === wk; });
+    var wkSessions = S.sessions.filter(function (s) { return weekStart(s.d) === wk; })
+      .concat(S.activities.filter(function (a) { return a.coach && weekStart(a.d) === wk; }));
     var days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
     var dots = days.map(function (l, i) {
       var d = parse(wk); d.setDate(d.getDate() + i); var k = ymd(d);
@@ -368,11 +369,11 @@
     } else if (ui.track === 'prog') {
       h += progHtml();
     } else {
-      var tot = S.sessions.length, mins = S.sessions.reduce(function (a, s) { return a + (s.mins || 0); }, 0) + totalActMins();
+      var nCoach = S.activities.filter(function (a) { return a.coach; }).length, tot = S.sessions.length + nCoach, mins = S.sessions.reduce(function (a, s) { return a + (s.mins || 0); }, 0) + totalActMins();
       h += '<section class="card"><div class="row"><div class="grow"><div class="big-num">' + tot + '</div><div class="muted">séances</div></div><div class="grow"><div class="big-num">' + mins + '</div><div class="muted">minutes</div></div></div></section>';
-      h += '<section class="card"><h2>Séances faites</h2>' + (tot ? '<ul class="list">' + S.sessions.slice().reverse().slice(0, 40).map(function (s) {
+      h += '<section class="card"><h2>Séances faites</h2>' + (S.sessions.length ? '<ul class="list">' + S.sessions.slice().reverse().slice(0, 40).map(function (s) {
         return '<li><div class="grow"><b>' + esc(s.name) + '</b><div class="muted">' + fmtDate(s.d) + ' · ' + s.mins + ' min' + (s.sci != null ? ' · douleur après : dos ' + s.sci + ', genou ' + s.knee : '') + '</div>' + detHtml(s) + '</div></li>';
-      }).join('') + '</ul>' : '<p class="muted">Aucune séance pour l\'instant.</p>') + '</section>';
+      }).join('') + '</ul>' : '<p class="muted">Aucune séance enregistrée dans l\'appli' + (nCoach ? ' (vos séances Coach sont dans la liste ci-dessous).' : '.') + '</p>') + '</section>';
       h += actListHtml();
     }
     return h;
@@ -400,7 +401,7 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v7 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v8 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- matériel et versions « avec / sans matériel » ---------- */
