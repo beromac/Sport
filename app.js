@@ -29,7 +29,7 @@
   /* ---------- données ---------- */
   function defaultHave() { return (D.equipment || []).filter(function (e) { return e.def; }).map(function (e) { return e.id; }); }
   function defaults() {
-    return { profile: { name: '', height: '', goal: '' }, weights: [], waist: [], pains: [], sessions: [], activities: [],
+    return { profile: { name: '', height: '', goal: '', age: '', sex: '' }, weights: [], waist: [], pains: [], sessions: [], activities: [],
       equip: { have: defaultHave(), custom: [], weights: '' }, variant: {},
       settings: { ack: false, rest: 45, awake: true, sound: true }, videos: {} };
   }
@@ -48,7 +48,7 @@
       if (j && typeof j === 'object') {
         Object.keys(d).forEach(function (k) { if (j[k] != null) d[k] = j[k]; });
         d.settings = Object.assign({ ack: false, rest: 45, awake: true, sound: true }, j.settings || {});
-        d.profile = Object.assign({ name: '', height: '', goal: '' }, j.profile || {});
+        d.profile = Object.assign({ name: '', height: '', goal: '', age: '', sex: '' }, j.profile || {});
         migrateWaist(d);
       }
     } catch (e) { /* données illisibles : on repart de zéro */ }
@@ -63,7 +63,7 @@
   var S = load();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* stockage plein ou bloqué */ } }
 
-  var ui = { prog: null, tab: 'home', track: 'poids', grp: 'Tous' };
+  var ui = { metric: 'kg', prog: null, tab: 'home', track: 'poids', grp: 'Tous' };
   var deferredInstall = null;
 
   /* ---------- doses ---------- */
@@ -229,25 +229,120 @@
     }).join('') + '</div>';
   }
 
+
+  /* ---------- composition corporelle ---------- */
+  var BODY_COLOR = '#0f766e';
+  function f1(v, d) { var k = Math.pow(10, d); return (Math.round(v * k) / k).toString().replace('.', ','); }
+  function bsigned(v, d) { var r = Math.round(v * Math.pow(10, d)) / Math.pow(10, d); return (r > 0 ? '+' : '') + r.toString().replace('.', ','); }
+  function imcOf(kg) { var hg = num(S.profile.height); return hg && hg > 100 && hg < 250 ? kg / Math.pow(hg / 100, 2) : null; }
+  var METRICS = [
+    { k: 'kg', n: 'Poids', u: 'kg', dec: 1, get: function (x) { return x.kg; } },
+    { k: 'imc', n: 'IMC', u: '', dec: 1, get: function (x) { return imcOf(x.kg); } },
+    { k: 'fat', n: 'Graisse', u: '%', dec: 1, get: function (x) { return x.fat; } },
+    { k: 'muscle', n: 'Muscle', u: 'kg', dec: 1, get: function (x) { return x.muscle; } },
+    { k: 'visc', n: 'Viscérale', u: '', dec: 1, get: function (x) { return x.visc; } },
+    { k: 'bone', n: 'Os', u: 'kg', dec: 2, get: function (x) { return x.bone; } }
+  ];
+  function metricPts(m) {
+    return sortedWeights().map(function (x) { var v = m.get(x); return v == null ? null : { x: x.d, y: v }; }).filter(Boolean);
+  }
+  /* IMC : classification de l'OMS */
+  function imcCat(v) {
+    if (v < 18.5) return { t: 'insuffisance pondérale', c: 'warn' };
+    if (v < 25) return { t: 'corpulence normale', c: 'ok' };
+    if (v < 30) return { t: 'surpoids', c: 'warn' };
+    return { t: 'obésité', c: 'bad' };
+  }
+  /* graisse corporelle : plages indicatives par sexe et tranche d'âge (adultes) */
+  function fatRange() {
+    var sex = S.profile.sex, age = num(S.profile.age);
+    if (!sex || !age || age < 20) return null;
+    var i = age < 40 ? 0 : age < 60 ? 1 : 2;
+    return sex === 'F' ? [[21, 33], [23, 35], [24, 36]][i] : [[8, 20], [11, 22], [13, 25]][i];
+  }
+  function fatCat(v) {
+    var r = fatRange(); if (!r) return null;
+    var rg = r[0] + '–' + r[1] + ' %';
+    if (v < r[0]) return { t: 'sous les repères (' + rg + ')', c: 'warn' };
+    if (v > r[1]) return { t: 'au-dessus des repères (' + rg + ')', c: 'warn' };
+    return { t: 'dans les repères (' + rg + ')', c: 'ok' };
+  }
+  /* graisse viscérale : échelle propre à chaque marque de balance */
+  function viscCat(v) {
+    if (v <= 9) return { t: 'normal', c: 'ok' };
+    if (v <= 12) return { t: 'zone limite', c: 'warn' };
+    if (v < 15) return { t: 'élevé', c: 'bad' };
+    return { t: 'très élevé', c: 'bad' };
+  }
+  function bodyView() {
+    var w = sortedWeights(), last = w[w.length - 1], hgt = num(S.profile.height);
+    var hasH = hgt && hgt > 100 && hgt < 250;
+    var h = '';
+    if (!w.length) {
+      h += '<section class="card"><h2>Mes mesures</h2><p class="muted">Pesez-vous, puis saisissez ce que votre balance affiche (seul le poids est obligatoire).</p></section>';
+    } else {
+      h += '<section class="card"><h2>Mes mesures</h2><div class="tiles">' + METRICS.map(function (m) {
+        var pts = metricPts(m), l = pts[pts.length - 1], pv = pts[pts.length - 2], tag = '', sub = '';
+        if (m.k === 'imc' && !hasH) tag = '<div class="tag info">indiquez votre taille ci-dessous</div>';
+        if (l) {
+          sub = fmtDate(l.x) + (pv ? ' · ' + bsigned(l.y - pv.y, m.dec) : '');
+          var c = null;
+          if (m.k === 'imc') c = imcCat(l.y);
+          else if (m.k === 'fat') { c = fatCat(l.y); if (!c) tag = '<div class="tag info">indiquez sexe et âge dans Profil</div>'; }
+          else if (m.k === 'visc') c = viscCat(l.y);
+          else if (m.k === 'muscle') {
+            var en = w.filter(function (x) { return x.d === l.x; })[0];
+            if (en && en.kg) tag = '<div class="tag info">' + f1(l.y / en.kg * 100, 0) + ' % du poids</div>';
+          } else if (m.k === 'bone') tag = '<div class="tag info">suivre la tendance</div>';
+          if (c) tag = '<div class="tag ' + c.c + '">' + esc(c.t) + '</div>';
+        }
+        return '<div class="tile"><div class="tl">' + m.n + '</div><div class="tv">' + (l ? f1(l.y, m.dec) + (m.u ? ' <small>' + m.u + '</small>' : '') : '—') + '</div>' +
+          (sub ? '<div class="muted">' + sub + '</div>' : '') + tag + '</div>';
+      }).join('') + '</div></section>';
+    }
+    h += '<section class="card"><h2>Ajouter une mesure</h2>' +
+      '<label for="wkg">Poids (kg)</label><input id="wkg" type="text" inputmode="decimal" placeholder="obligatoire, ex. 62,5">' +
+      (hasH ? '' : '<label for="bheight">Taille (cm) — pour calculer l\'IMC</label><input id="bheight" type="text" inputmode="decimal" placeholder="ex. 165">') +
+      '<div class="row"><div class="grow"><label for="wfat">Graisse (%)</label><input id="wfat" type="text" inputmode="decimal" placeholder="facultatif"></div>' +
+      '<div class="grow"><label for="wvisc">Viscérale</label><input id="wvisc" type="text" inputmode="decimal" placeholder="indice, facultatif"></div></div>' +
+      '<label for="wmus">Masse musculaire</label><div class="row"><input id="wmus" type="text" inputmode="decimal" placeholder="facultatif"><select id="wmunit" style="width:84px;flex:none"><option value="kg">kg</option><option value="%">%</option></select></div>' +
+      '<label for="wbone">Masse osseuse (kg)</label><input id="wbone" type="text" inputmode="decimal" placeholder="facultatif">';
+
+    h += '<button class="btn primary big" data-act="addweight" style="margin-top:12px">Enregistrer</button>' +
+      '<p class="muted">Une mesure par jour : si vous enregistrez de nouveau aujourd\'hui, les champs remplis remplacent les anciens.</p></section>';
+    var shown = METRICS.filter(function (m) { return m.k === 'kg' || metricPts(m).length; });
+    var cur = shown.filter(function (m) { return m.k === ui.metric; })[0] || shown[0];
+    h += '<section class="card"><h2>Évolution</h2><div class="chips">' + shown.map(function (m) {
+      return '<button class="chip' + (m === cur ? ' on' : '') + '" data-act="metric" data-m="' + m.k + '">' + m.n + '</button>';
+    }).join('') + '</div>' +
+      chart([{ name: cur.n, color: BODY_COLOR, pts: metricPts(cur) }], { dec: cur.dec, label: 'Évolution : ' + cur.n }) +
+      '<p class="muted">Objectif : une graisse corporelle qui baisse, en gardant (ou en augmentant) la masse musculaire.</p></section>';
+    h += '<section class="card"><details><summary>Comment lire ces chiffres ?</summary>' +
+      '<ul class="t"><li><b>Même conditions à chaque fois</b> : même balance, le matin, à jeun, pieds secs. Les balances connectées (impédance) donnent des estimations : regardez la tendance, pas un chiffre isolé.</li>' +
+      '<li><b>IMC</b> : classification de l\'OMS (moins de 18,5 · 18,5 à 24,9 · 25 à 29,9 · 30 et plus). Elle ne distingue pas le muscle de la graisse.</li>' +
+      '<li><b>Graisse corporelle</b> : repères indicatifs selon le sexe et l\'âge (adultes de 20 à 79 ans).</li>' +
+      '<li><b>Graisse viscérale</b> : l\'échelle dépend de la marque de la balance (en général 9 ou moins = normal, 10 à 12 = limite selon les marques, 13 et plus = élevé, 15 et plus = très élevé). C\'est un indicateur relatif, pas un diagnostic.</li>' +
+      '<li><b>Masse musculaire et osseuse</b> : pas de seuil fiable avec une balance, on suit l\'évolution dans le temps. Une baisse durable de la masse osseuse mérite d\'en parler à votre médecin.</li></ul>' +
+      '<p class="muted">Ces repères ne remplacent pas un avis médical.</p></details></section>';
+    h += '<section class="card"><h2>Historique</h2>' + (w.length ? '<ul class="list">' + w.slice().reverse().slice(0, 30).map(function (x) {
+      var bits = [];
+      if (x.fat != null) bits.push('graisse ' + f1(x.fat, 1) + ' %');
+      if (x.muscle != null) bits.push('muscle ' + f1(x.muscle, 1) + ' kg');
+      if (x.visc != null) bits.push('visc. ' + f1(x.visc, 1));
+      if (x.bone != null) bits.push('os ' + f1(x.bone, 2) + ' kg');
+
+      return '<li><div class="grow"><b>' + fmtKg(x.kg) + '</b><div class="muted">' + fmtDate(x.d) + (bits.length ? ' · ' + bits.join(' · ') : '') + '</div></div>' +
+        '<button class="btn small danger" data-act="delweight" data-d="' + x.d + '" aria-label="Supprimer la mesure du ' + fmtDate(x.d) + '">✕</button></li>';
+    }).join('') + '</ul>' : '<p class="muted">Aucune mesure.</p>') + '</section>';
+    return h;
+  }
   function viewTrack() {
-    var tabs = [['poids', 'Poids'], ['ventre', 'Ventre'], ['douleur', 'Douleurs'], ['prog', 'Progrès'], ['histo', 'Séances']];
+    var tabs = [['poids', 'Corps'], ['ventre', 'Ventre'], ['douleur', 'Douleurs'], ['prog', 'Progrès'], ['histo', 'Séances']];
     var h = '<h1>Suivi</h1><div class="seg">' + tabs.map(function (t) {
       return '<button class="' + (ui.track === t[0] ? 'on' : '') + '" data-act="track" data-t="' + t[0] + '">' + t[1] + '</button>';
     }).join('') + '</div>';
     if (ui.track === 'poids') {
-      var w = sortedWeights();
-      h += '<section class="card"><h2>Ajouter une pesée</h2><label for="wkg">Poids (kg)</label><input id="wkg" type="text" inputmode="decimal" placeholder="ex. 84,5">' +
-        '<button class="btn primary big" data-act="addweight" style="margin-top:12px">Enregistrer</button></section>';
-      h += '<section class="card"><h2>Évolution</h2>' + chart([{ name: 'Poids', color: '#0f766e', pts: w.map(function (x) { return { x: x.d, y: x.kg }; }) }], { dec: 1, label: 'Évolution du poids' });
-      var hgt = num(S.profile.height);
-      if (w.length && hgt && hgt > 100) {
-        var imc = w[w.length - 1].kg / Math.pow(hgt / 100, 2);
-        h += '<p class="muted">IMC actuel : ' + (Math.round(imc * 10) / 10).toString().replace('.', ',') + '</p>';
-      }
-      h += '</section>';
-      h += '<section class="card"><h2>Historique</h2>' + (w.length ? '<ul class="list">' + w.slice().reverse().slice(0, 30).map(function (x) {
-        return '<li><div class="grow"><b>' + fmtKg(x.kg) + '</b>' + '<div class="muted">' + fmtDate(x.d) + '</div></div><button class="btn small danger" data-act="delweight" data-d="' + x.d + '" aria-label="Supprimer">🗑</button></li>';
-      }).join('') + '</ul>' : '<p class="muted">Aucune pesée.</p>') + '</section>';
+      h += bodyView();
     } else if (ui.track === 'ventre') {
       var wa = sortedWaist();
       h += '<section class="card"><h2>Ajouter une mesure</h2><label for="wcm">Tour de ventre (cm)</label><input id="wcm" type="text" inputmode="decimal" placeholder="ex. 98,5">' +
@@ -287,6 +382,8 @@
     var p = S.profile;
     return '<h1>Profil</h1><section class="card"><label for="pname">Prénom</label><input id="pname" type="text" value="' + esc(p.name) + '">' +
       '<label for="pheight">Taille (cm)</label><input id="pheight" type="text" inputmode="decimal" value="' + esc(p.height) + '">' +
+      '<label for="page">Âge</label><input id="page" type="text" inputmode="numeric" value="' + esc(p.age) + '">' +
+      '<label for="psex">Sexe (pour interpréter le taux de graisse)</label><select id="psex"><option value="">—</option><option value="F"' + (p.sex === 'F' ? ' selected' : '') + '>Femme</option><option value="M"' + (p.sex === 'M' ? ' selected' : '') + '>Homme</option></select>' +
       '<label for="pgoal">Poids objectif (kg)</label><input id="pgoal" type="text" inputmode="decimal" step="0.1" value="' + esc(p.goal) + '">' +
       '<label for="prest">Temps de repos entre séries</label><select id="prest">' + [30, 45, 60, 90].map(function (v) {
         return '<option value="' + v + '"' + (S.settings.rest === v ? ' selected' : '') + '>' + v + ' secondes</option>';
@@ -303,7 +400,7 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v5 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v6 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- matériel et versions « avec / sans matériel » ---------- */
@@ -747,10 +844,24 @@
     addweight: function () {
       var kg = num($('#wkg').value);
       if (!kg || kg < 30 || kg > 300) { alert('Entrez un poids valide (en kg).'); return; }
-      var t = today();
+      var fat = num($('#wfat').value), visc = num($('#wvisc').value), mus = num($('#wmus').value), bone = num($('#wbone').value);
+      if (fat != null && (fat < 3 || fat > 70)) { alert('Graisse corporelle : entrez une valeur entre 3 et 70 %.'); return; }
+      if (visc != null && (visc < 0.5 || visc > 59)) { alert('Graisse viscérale : entrez l\'indice affiché par la balance (1 à 59).'); return; }
+      if (bone != null && (bone < 0.5 || bone > 8)) { alert('Masse osseuse : entrez une valeur en kg (entre 0,5 et 8).'); return; }
+      if (mus != null) {
+        if ($('#wmunit').value === '%') {
+          if (mus < 10 || mus > 80) { alert('Masse musculaire : entrez un pourcentage entre 10 et 80.'); return; }
+          mus = Math.round(kg * mus / 10) / 10;
+        } else if (mus < 10 || mus > 150) { alert('Masse musculaire : entrez une valeur en kg (entre 10 et 150).'); return; }
+      }
+      var hin = $('#bheight'), hv = hin ? num(hin.value) : null;
+      if (hv != null) { if (hv < 100 || hv > 250) { alert('Entrez une taille valide (en cm).'); return; } S.profile.height = String(hv); }
+      var t = today(), e = Object.assign({}, S.weights.filter(function (w) { return w.d === t; })[0] || {}, { d: t, kg: kg });
+      if (fat != null) e.fat = fat; if (visc != null) e.visc = visc; if (mus != null) e.muscle = mus; if (bone != null) e.bone = bone;
       S.weights = S.weights.filter(function (w) { return w.d !== t; });
-      S.weights.push({ d: t, kg: kg }); save(); render();
+      S.weights.push(e); save(); render();
     },
+    metric: function (el) { ui.metric = el.dataset.m; render(); },
     addwaist: function () {
       var cm = num($('#wcm').value);
       if (!cm || cm < 40 || cm > 250) { alert('Entrez un tour de ventre valide (en cm).'); return; }
@@ -766,6 +877,7 @@
     },
     saveprofile: function () {
       S.profile.name = $('#pname').value.trim(); S.profile.height = $('#pheight').value; S.profile.goal = $('#pgoal').value;
+      S.profile.age = $('#page').value; S.profile.sex = $('#psex').value;
       S.settings.rest = +$('#prest').value; save(); render(); alert('Profil enregistré ✔');
     },
     savevideo: function (el) {
