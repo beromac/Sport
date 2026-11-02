@@ -425,8 +425,15 @@ window.DATA = {
       "Se pencher en avant avec une charge, abdos type « crunch », rester assis des heures."
     ],
     urgent: [
+      "Après une rupture du tendon d'Achille : douleur vive ou « claquement » au tendon, impossibilité de vous appuyer, ou mollet gonflé, chaud, rouge ou douloureux d'un seul côté (risque de phlébite) : consultez rapidement.",
       "Engourdissement de la région génitale ou de l'entrejambe, difficultés nouvelles à uriner ou à aller à la selle, faiblesse brutale ou pied qui « tombe » : appelez le 15 ou le 112 sans attendre.",
       "Genou bloqué (impossible de l'étendre), gonflement important, chaleur, rougeur ou fièvre : consultez rapidement."
+    ],
+    achille: [
+      "Les exercices du groupe « Équilibre & cheville » sont à commencer seulement avec l'accord de votre chirurgien ou de votre kinésithérapeute, selon l'étape de votre protocole (type d'appui, botte ou chaussure, reprise des montées sur la pointe).",
+      "Douleur au tendon : 3/10 maximum pendant l'exercice, sans gonflement ni raideur plus forte le lendemain.",
+      "Pas d'étirement forcé du mollet, pas de saut, de course ni de changement de direction brusque tant que ce n'est pas validé.",
+      "Travaillez près d'un appui, sur un sol non glissant, jamais seul(e) sur une surface instable."
     ],
     weight: "Pour perdre du poids durablement, visez une perte lente et régulière (de l'ordre de 0,25 à 0,5 kg par semaine), la marche presque tous les jours, un bon sommeil et une alimentation sans régime extrême. Un médecin ou un diététicien peut vous accompagner."
   }
@@ -579,6 +586,215 @@ window.DATA = {
     ]
   });
 
+
+  /* ===== Équilibre et cheville (après rupture du tendon d'Achille) ===== */
+  D.groups.splice(D.groups.indexOf('Cardio doux'), 0, 'Équilibre & cheville');
+  D.equipment.push({ id: 'coussin', name: 'Coussin ferme ou oreiller épais (surface instable)', short: 'coussin', def: false });
+  var RX = 'Réservé à la rééducation : à faire seulement avec l\'accord de votre chirurgien ou de votre kinésithérapeute, selon l\'étape de votre protocole.';
+  var POST = [[126, 46, 126, 122], [118, 46, 134, 46]];
+  var WALL = [[132, 10, 132, 122]];
+  function shiftFrame(dx) {
+    var tx = 100 + dx, px = 100 + dx * 0.6;
+    return { raw: { head: [tx, 13], lines: [
+      [tx, 24, tx, 62], [tx - 12, 26, tx + 12, 26], [tx - 12, 26, tx - 14, 44], [tx - 14, 44, tx - 14, 58], [tx + 12, 26, tx + 14, 44], [tx + 14, 44, tx + 14, 58],
+      [px - 8, 62, px + 8, 62], [px - 8, 62, 90 + dx * 0.3, 92], [90 + dx * 0.3, 92, 84, 122], [px + 8, 62, 110 + dx * 0.3, 92], [110 + dx * 0.3, 92, 116, 122]] } };
+  }
+  D.exos.push({
+    id: 'ankcirc', name: 'Cercles et alphabet avec la cheville (assis)', group: 'Équilibre & cheville', icon: '🦶',
+    dose: { type: 'reps', sets: 2, reps: 10, perSide: true }, rest: 20,
+    cap: ['Pied tiré vers vous', 'Pied pointé'],
+    steps: [
+      'Assis au bord d\'une chaise, une jambe tendue devant vous, talon posé au sol ou jambe un peu levée.',
+      'Dessinez de grands cercles lents avec le pied, dans un sens puis dans l\'autre. Vous pouvez aussi « écrire » l\'alphabet avec le gros orteil.',
+      'Le mouvement vient de la cheville, pas de la jambe. Faites les deux côtés.'
+    ],
+    tips: [RX, 'Mouvements lents et sans forcer : le but est de retrouver de la mobilité et de réveiller la cheville.'],
+    stop: 'Douleur vive ou tiraillement au tendon d\'Achille, gonflement de la cheville.',
+    easier: 'Cercles plus petits, ou seulement pied tiré puis pointé, sans forcer en fin de course.',
+    yt: 'mobilité cheville après rupture tendon d\'Achille exercices',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [80, 90], l: [-5, -5], props: [[86, 94, 116, 94], [88, 94, 88, 122], [114, 94, 114, 122], [159.8, 86.8, 156, 74]] },
+      { r: [100, 92], t: -90, h: -90, a: [80, 90], l: [-5, -5], props: [[86, 94, 116, 94], [88, 94, 88, 122], [114, 94, 114, 122], [159.8, 86.8, 172, 92]] }
+    ]
+  });
+  D.exos.push({
+    id: 'bandankle', name: 'Cheville contre élastique (tirer, pointer, côtés)', group: 'Équilibre & cheville', icon: '🎗️',
+    dose: { type: 'reps', sets: 2, reps: 12, perSide: true }, rest: 30,
+    cap: ['Pied tiré', 'Pied pointé'],
+    steps: [
+      'Assis, jambe tendue devant vous. Passez une bande élastique autour de l\'avant du pied et tenez les deux bouts (ou accrochez-la à un pied de meuble).',
+      'Pointez lentement le pied contre la résistance en 2 secondes, revenez en 3 secondes.',
+      'Puis faites aussi tirer le pied vers vous, et les mouvements vers l\'intérieur et l\'extérieur si votre kiné vous l\'a conseillé.'
+    ],
+    tips: [RX, 'Choisissez une bande légère au début : la résistance doit rester facile.'],
+    stop: 'Douleur dans le tendon d\'Achille, douleur vive ou crampe au mollet.',
+    easier: 'Sans élastique : mêmes mouvements du pied, lentement, sans résistance.',
+    yt: 'renforcement cheville élastique après rupture achille',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [80, 90], l: [-5, -5], props: [[86, 94, 116, 94], [88, 94, 88, 122], [114, 94, 114, 122], [159.8, 86.8, 156, 74], [156, 74, 190, 82], [190, 70, 190, 100]] },
+      { r: [100, 92], t: -90, h: -90, a: [80, 90], l: [-5, -5], props: [[86, 94, 116, 94], [88, 94, 88, 122], [114, 94, 114, 122], [159.8, 86.8, 172, 92], [172, 92, 190, 82], [190, 70, 190, 100]] }
+    ]
+  });
+  D.exos.push({
+    id: 'shift', name: 'Transfert du poids d\'un pied à l\'autre', group: 'Équilibre & cheville', icon: '⚖️',
+    dose: { type: 'reps', sets: 2, reps: 10 }, rest: 30,
+    cap: ['Poids à gauche', 'Poids à droite'],
+    steps: [
+      'Debout, pieds écartés de la largeur des épaules, genoux souples, près d\'un appui.',
+      'Déplacez lentement le poids du corps sur un pied, puis sur l\'autre, en gardant le dos droit.',
+      'Un aller-retour compte pour une répétition. Gardez les deux pieds bien à plat.'
+    ],
+    tips: [RX, 'Au début, ne mettez sur le pied opéré que le poids que votre kiné autorise : le reste sur l\'autre pied.'],
+    stop: 'Douleur dans le tendon, sensation d\'instabilité ou douleur au genou.',
+    easier: 'Déplacement plus petit, mains posées sur une table.',
+    yt: 'transfert de poids rééducation cheville appui',
+    frames: [shiftFrame(-8), shiftFrame(8)]
+  });
+  D.exos.push({
+    id: 'bipodal', name: 'Équilibre debout, pieds serrés', group: 'Équilibre & cheville', icon: '🧍',
+    dose: { type: 'time', sets: 3, secs: 30 }, rest: 30,
+    cap: ['Debout droit', 'Léger balancement'],
+    steps: [
+      'Debout près d\'un mur ou d\'un plan de travail, pieds serrés, bras le long du corps.',
+      'Regardez un point fixe devant vous. Gardez le corps droit, sans vous appuyer.',
+      'Tenez le temps indiqué. Posez une main sur l\'appui dès que vous perdez l\'équilibre.'
+    ],
+    tips: [RX, 'Respirez normalement, serrez légèrement les fessiers et gardez les genoux souples.'],
+    stop: 'Douleur au tendon, au genou ou dans le dos.',
+    easier: 'Pieds écartés de la largeur du bassin, une main sur l\'appui.',
+    yt: 'équilibre bipodal rééducation proprioception',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [70, 80], l: [90, 90], props: WALL },
+      { r: [100, 62], t: -93, h: -93, a: [80, 85], l: [90, 90], props: WALL }
+    ]
+  });
+  D.exos.push({
+    id: 'tandem', name: 'Équilibre pieds en ligne (un pied devant l\'autre)', group: 'Équilibre & cheville', icon: '📏',
+    dose: { type: 'time', sets: 3, secs: 20, perSide: true }, rest: 30,
+    cap: ['Un pied devant', 'Pieds inversés'],
+    steps: [
+      'Debout près d\'un appui, placez un pied juste devant l\'autre, talon contre orteils, comme sur une ligne.',
+      'Tenez la position, bras légèrement écartés, regard devant vous.',
+      'À la moitié du temps (le bip vous prévient), changez le pied qui est devant.'
+    ],
+    tips: [RX, 'Répartissez le poids sur les deux pieds, sans vous crisper.'],
+    stop: 'Douleur au tendon d\'Achille ou perte d\'équilibre répétée.',
+    easier: 'Pieds un peu écartés d\'une largeur de main, une main sur l\'appui.',
+    yt: 'équilibre tandem pieds en ligne rééducation',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [30, 30], l: [78, 92], l2: [102, 88], props: WALL },
+      { r: [100, 62], t: -90, h: -90, a: [30, 30], l: [102, 88], l2: [78, 92], props: WALL }
+    ]
+  });
+  D.exos.push({
+    id: 'monowall', name: 'Équilibre sur un pied (avec appui)', group: 'Équilibre & cheville', icon: '🦩',
+    dose: { type: 'time', sets: 3, secs: 20, perSide: true }, rest: 30,
+    cap: ['Pied soulevé', 'Genou un peu plus haut'],
+    steps: [
+      'Debout, une main sur le dossier d\'une chaise ou sur un plan de travail stable.',
+      'Soulevez un pied de quelques centimètres et tenez sur l\'autre jambe, genou souple, bassin à niveau.',
+      'À la moitié du temps (le bip vous prévient), changez de jambe.'
+    ],
+    tips: [RX, 'Vous ne devez pas peser sur la main : elle est là pour vous rassurer.', 'Pas besoin de lever haut le genou : quelques centimètres suffisent.'],
+    stop: 'Douleur au tendon d\'Achille, au genou ou dans la jambe.',
+    easier: 'Le bout du pied soulevé reste posé au sol.',
+    yt: 'équilibre unipodal avec appui rééducation cheville',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [50, 50], l: [90, 90], l2: [60, 100], props: POST },
+      { r: [100, 62], t: -90, h: -90, a: [50, 50], l: [90, 90], l2: [40, 100], props: POST }
+    ]
+  });
+  D.exos.push({
+    id: 'monofree', name: 'Équilibre sur un pied (sans appui)', group: 'Équilibre & cheville', icon: '🦩',
+    dose: { type: 'time', sets: 2, secs: 30, perSide: true }, rest: 30,
+    cap: ['Bras écartés', 'Genou levé'],
+    steps: [
+      'Debout à côté d\'un mur ou d\'un meuble, à portée de main, sans vous appuyer.',
+      'Soulevez un pied et tenez sur l\'autre jambe, bras légèrement écartés, regard fixé devant vous.',
+      'À la moitié du temps (le bip vous prévient), changez de jambe.'
+    ],
+    tips: [RX, 'À essayer seulement quand l\'équilibre sur un pied avec appui est facile et sans douleur.'],
+    stop: 'Douleur au tendon, au genou ou perte d\'équilibre répétée.',
+    easier: 'Revenez à « Équilibre sur un pied (avec appui) ».',
+    yt: 'équilibre unipodal sans appui proprioception',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [10, 10], l: [90, 90], l2: [50, 100], props: WALL },
+      { r: [100, 62], t: -90, h: -90, a: [20, 20], l: [90, 90], l2: [40, 100], props: WALL }
+    ]
+  });
+  D.exos.push({
+    id: 'eyesclosed', name: 'Équilibre yeux fermés (près d\'un appui)', group: 'Équilibre & cheville', icon: '🙈',
+    dose: { type: 'time', sets: 3, secs: 20 }, rest: 30,
+    cap: ['Yeux fermés', 'Léger balancement'],
+    steps: [
+      'Debout, pieds largeur du bassin, tout près d\'un mur ou d\'un plan de travail.',
+      'Fermez les yeux et gardez la position, bras le long du corps.',
+      'Rouvrez les yeux ou posez la main sur l\'appui dès que vous perdez l\'équilibre.'
+    ],
+    tips: [RX, 'Les yeux fermés rendent l\'exercice plus difficile : c\'est la cheville et le pied qui travaillent.'],
+    stop: 'Étourdissement, douleur au tendon ou perte d\'équilibre répétée.',
+    easier: 'Gardez les yeux ouverts, ou fermez-les seulement 5 secondes à la fois.',
+    yt: 'équilibre yeux fermés proprioception exercice',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [70, 80], l: [90, 90], props: WALL },
+      { r: [100, 62], t: -92, h: -92, a: [85, 85], l: [90, 90], props: WALL }
+    ]
+  });
+  D.exos.push({
+    id: 'foam', name: 'Équilibre sur un pied sur coussin', group: 'Équilibre & cheville', icon: '🛏️',
+    dose: { type: 'time', sets: 2, secs: 20, perSide: true }, rest: 30,
+    cap: ['Sur le coussin', 'Genou levé'],
+    steps: [
+      'Posez un coussin ferme au sol, près d\'un appui, et montez dessus sur les deux pieds.',
+      'Soulevez un pied et tenez sur l\'autre, bras légèrement écartés, regard devant vous.',
+      'À la moitié du temps (le bip vous prévient), changez de jambe.'
+    ],
+    tips: [RX, 'À réserver aux étapes avancées, quand l\'équilibre sur sol dur est facile.'],
+    stop: 'Douleur au tendon ou au genou, ou impossibilité de garder l\'équilibre.',
+    easier: 'Restez sur les deux pieds sur le coussin, une main sur l\'appui.',
+    yt: 'équilibre sur coussin instable rééducation cheville',
+    frames: [
+      { r: [100, 60], t: -90, h: -90, a: [10, 10], l: [90, 90], l2: [50, 100], props: [[80, 118, 120, 118], [84, 122, 116, 122], [132, 10, 132, 122]] },
+      { r: [100, 60], t: -91, h: -91, a: [20, 20], l: [90, 90], l2: [40, 100], props: [[80, 118, 120, 118], [84, 122, 116, 122], [132, 10, 132, 122]] }
+    ]
+  });
+  D.exos.push({
+    id: 'heelwalk', name: 'Marche pieds en ligne, talon-pointe', group: 'Équilibre & cheville', icon: '🚶',
+    dose: { type: 'time', sets: 2, secs: 30 }, rest: 30,
+    cap: ['Pied devant', 'Autre pied devant'],
+    steps: [
+      'Choisissez un couloir ou une ligne de 3 à 4 mètres, près d\'un mur.',
+      'Avancez en posant le talon d\'un pied juste devant les orteils de l\'autre, comme sur un fil.',
+      'Allez lentement, regard devant vous, bras légèrement écartés. Faites demi-tour sans pivoter pied bloqué.'
+    ],
+    tips: [RX, 'Marchez pieds nus ou chaussés selon l\'avis de votre kiné, sur un sol non glissant.'],
+    stop: 'Douleur au tendon, au genou ou dans la jambe.',
+    easier: 'Pas plus larges, main sur le mur.',
+    yt: 'marche talon pointe équilibre rééducation',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [70, 75], a2: [110, 105], l: [74, 95], l2: [106, 85] },
+      { r: [100, 62], t: -90, h: -90, a: [110, 105], a2: [70, 75], l: [106, 85], l2: [74, 95] }
+    ]
+  });
+  D.exos.push({
+    id: 'heel1', name: 'Montée sur la pointe d\'un seul pied (étape avancée)', group: 'Équilibre & cheville', icon: '👣',
+    dose: { type: 'reps', sets: 3, reps: 8, perSide: true }, rest: 45,
+    cap: ['Talon au sol', 'Sur la pointe'],
+    steps: [
+      'Debout face à un mur ou une chaise, mains en appui léger, en équilibre sur un seul pied.',
+      'Montez lentement sur la pointe du pied en 2 secondes, tenez 1 seconde.',
+      'Redescendez très lentement en 3 secondes. Faites tous les mouvements du même côté, puis changez.'
+    ],
+    tips: [RX, 'C\'est l\'exercice le plus exigeant pour le tendon : à n\'essayer que lorsque votre chirurgien ou kiné l\'a autorisé, après les montées à deux pieds.'],
+    stop: 'Douleur au tendon d\'Achille (au-delà de 3/10), au mollet ou au genou.',
+    easier: 'Montées sur la pointe à deux pieds (« Montées sur la pointe des pieds »), ou en poussant un peu avec l\'autre pied.',
+    yt: 'montée sur pointe unipodale rééducation achille',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [50, 50], l: [90, 90], l2: [100, 170], props: POST.concat([[100, 122, 108, 122]]) },
+      { r: [100, 54], t: -90, h: -90, a: [50, 50], l: [90, 90], l2: [100, 170], props: POST.concat([[100, 114, 108, 122]]) }
+    ]
+  });
+
   D.exos.forEach(function (e) { EXO[e.id] = e; });
   function eq(ids, list, noeq, sub) {
     ids.split(' ').forEach(function (id) {
@@ -599,6 +815,10 @@ window.DATA = {
   eq('row', 'elastique', 'Sans élastique : poussez les coudes en arrière contre un mur.', 'wallrow');
   eq('curl', 'halteres bouteilles', 'Sans haltères ni objets : résistez avec l\'autre main (curl en auto-résistance).', 'selfcurl');
   eq('bike', 'velo'); eq('bikeout', 'velo_ext'); eq('swim', 'piscine');
+  eq('ankcirc', 'chaise', 'Sans chaise : asseyez-vous au bord d\'un lit ou d\'un canapé, jambe tendue devant vous.');
+  eq('bandankle', 'elastique', 'Sans élastique : mêmes mouvements du pied, lentement, en résistant avec votre main ou sans résistance.');
+  eq('shift bipodal tandem monowall eyesclosed heel1', 'chaise table', SUPPORT);
+  eq('foam', 'coussin', 'Sans coussin : restez sur le sol et regardez lentement de gauche à droite (ou fermez les yeux quelques secondes) pour rendre l\'exercice plus difficile.');
 
   function S(id) { return D.sessions.filter(function (s) { return s.id === id; })[0]; }
   S('douce').items = [
@@ -613,6 +833,22 @@ window.DATA = {
     { id: 'marchplace', w: true }, { id: 'shoulders', w: true }, { id: 'armcircles', w: true }, { id: 'chestopen', w: true }, { id: 'catcamel', w: true, sets: 1, reps: 8 },
     { id: 'wallpush' }, { id: 'row' }, { id: 'curl' }, { id: 'deadbug' }, { id: 'birddog' }, { id: 'plank' }
   ];
+  D.sessions.push({
+    id: 'achille1', name: 'Équilibre et cheville : niveau 1', tag: 'Rééducation Achille',
+    desc: 'Mobilité de la cheville, transfert du poids et équilibre sur les deux pieds puis un pied avec appui. À commencer avec l\'accord de votre chirurgien ou kiné.',
+    items: [
+      { id: 'ankcirc', w: true, sets: 1, reps: 10 }, { id: 'bandankle' }, { id: 'shift' }, { id: 'bipodal' },
+      { id: 'tandem' }, { id: 'monowall' }, { id: 'calf', sets: 2, reps: 10 }
+    ]
+  });
+  D.sessions.push({
+    id: 'achille2', name: 'Équilibre et cheville : niveau 2', tag: 'Rééducation Achille',
+    desc: 'Équilibre sur un pied sans appui, yeux fermés, sur coussin, puis montées sur un pied. À commencer seulement quand le niveau 1 est facile et validé par votre kiné.',
+    items: [
+      { id: 'ankcirc', w: true, sets: 1, reps: 10 }, { id: 'monofree' }, { id: 'eyesclosed' }, { id: 'foam' },
+      { id: 'heelwalk' }, { id: 'heel1' }, { id: 'bandankle', sets: 1 }
+    ]
+  });
   S('C').items = [
     { id: 'shoulders', w: true }, { id: 'chestopen', w: true }, { id: 'walk', mins: 20 },
     { id: 'hamstring' }, { id: 'piriformis' }, { id: 'sphinx', sets: 2 }, { id: 'catcamel', sets: 1, reps: 8 }

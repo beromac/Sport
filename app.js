@@ -401,7 +401,7 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v9 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v10 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- matériel et versions « avec / sans matériel » ---------- */
@@ -668,6 +668,7 @@
       '<h3>Les règles d\'or</h3><ul class="t">' + sf.rules.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>' +
       '<h3>À éviter</h3><ul class="t">' + sf.avoid.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>' +
       '<h3>Consulter sans attendre</h3><div class="banner bad">' + sf.urgent.map(function (r) { return '<p>' + esc(r) + '</p>'; }).join('') + '</div>' +
+      '<h3>Tendon d\'Achille (équilibre et cheville)</h3><ul class="t">' + (sf.achille || []).map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>' +
       '<h3>Perte de poids</h3><p>' + esc(sf.weight) + '</p>';
     if (first) {
       h += '<h3>Votre profil (modifiable plus tard)</h3><label for="onname">Prénom</label><input id="onname" type="text">' +
