@@ -14,6 +14,7 @@ Application Android (installable depuis Chrome) pour **perdre du poids, s'assoup
 - Équilibre & cheville (après rupture du tendon d'Achille) : 11 exercices et 2 séances (niveau 1 et niveau 2), à commencer avec l'accord du chirurgien ou du kiné
 - Séance D : tendon d'Achille et genoux (extension du genou, chaise au mur, montée de marche, montées lentes chargées, descentes sur une marche)
 - Programme canicross de 12 semaines avec un chien (marche rapide, puis trot très doux si le médecin ou le kiné l'autorise), chrono d'intervalles et conseils pour le chien
+- Au travail : 2 séances discrètes (5 et 10 min, assis, sans bruit ni matériel) pour le dos et la sangle abdominale
 - Fonctionne hors-ligne, données stockées sur le téléphone (export/import JSON)
 
 > Cette application ne remplace pas un avis médical. Montrez les exercices à votre médecin ou kiné avant de commencer.

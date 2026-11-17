@@ -1006,6 +1006,174 @@ window.DATA = {
     ]
   });
 
+
+  /* ===== Au travail : discret, silencieux, assis ou debout ===== */
+  D.groups.splice(D.groups.indexOf('Tendon & genoux'), 0, 'Au travail');
+  var DESKTIP = 'Discret et silencieux : personne ne le remarque. Gardez le souffle naturel.';
+  var DESK = [[118, 70, 172, 70], [164, 70, 164, 122]];
+  D.exos.push({
+    id: 'deskpelvic', name: 'Bascule du bassin assis', group: 'Au travail', icon: '🪑',
+    dose: { type: 'reps', sets: 2, reps: 12, rest: 10 }, rest: 10,
+    cap: ['Dos creusé', 'Dos arrondi'],
+    steps: [
+      'Assis sur le bord de la chaise, pieds à plat, mains sur les cuisses.',
+      'Basculez doucement le bassin vers l\'avant (dos légèrement creusé), puis vers l\'arrière (dos légèrement arrondi).',
+      'Petits mouvements lents, sans forcer. Le haut du corps reste calme.'
+    ],
+    tips: [DESKTIP, 'Réveille le bas du dos et soulage la position assise prolongée.'],
+    stop: 'Douleur dans le bas du dos ou qui descend dans la jambe.',
+    easier: 'Mouvements encore plus petits.',
+    yt: 'bascule du bassin assis mal de dos bureau',
+    frames: [
+      { r: [100, 92], t: -84, h: -84, a: [30, 60], l: [0, 90], props: SEAT },
+      { r: [100, 92], t: -97, h: -97, a: [30, 60], l: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskbrace', name: 'Gainage du ventre assis (nombril vers la colonne)', group: 'Au travail', icon: '🎯',
+    dose: { type: 'time', sets: 3, secs: 15, rest: 10 }, rest: 10,
+    cap: ['Se redresser', 'Ventre rentré'],
+    steps: [
+      'Assis grand, dos droit sans s\'appuyer, pieds à plat.',
+      'Rentrez doucement le ventre, comme pour éloigner le nombril de la ceinture, sans bloquer la respiration.',
+      'Tenez le temps indiqué en respirant normalement, puis relâchez.'
+    ],
+    tips: [DESKTIP, 'Travaille le muscle profond de la sangle abdominale, celui qui soutient le dos.'],
+    stop: 'Douleur dans le dos ou le bas-ventre.',
+    easier: '8 secondes, en contractant moins fort.',
+    yt: 'transverse abdominal contraction assis bureau',
+    frames: [
+      { r: [100, 92], t: -97, h: -85, a: [30, 60], l: [0, 90], props: SEAT },
+      { r: [100, 92], t: -90, h: -90, a: [30, 60], l: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskretract', name: 'Omoplates qui se rapprochent', group: 'Au travail', icon: '🦅',
+    dose: { type: 'reps', sets: 3, reps: 12, rest: 10 }, rest: 10,
+    cap: ['Bras devant', 'Coudes en arrière'],
+    steps: [
+      'Assis ou debout, bras devant vous, épaules basses.',
+      'Ramenez les coudes en arrière en serrant les omoplates l\'une contre l\'autre, comme pour les glisser dans les poches arrière.',
+      'Tenez 2 secondes, puis revenez lentement. Ne cambrez pas le dos.'
+    ],
+    tips: [DESKTIP, 'Renforce le haut du dos et corrige la position penchée sur l\'écran.'],
+    stop: 'Douleur vive à l\'épaule ou dans le cou.',
+    easier: 'Mouvement plus petit.',
+    yt: 'rétraction des omoplates assis exercice bureau',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [10, 10], l: [0, 90], props: SEAT },
+      { r: [100, 92], t: -90, h: -90, a: [105, -10], l: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskchin', name: 'Menton rentré (nuque et haut du dos)', group: 'Au travail', icon: '🙂',
+    dose: { type: 'reps', sets: 2, reps: 10, rest: 10 }, rest: 10,
+    cap: ['Tête en avant', 'Menton rentré'],
+    steps: [
+      'Assis ou debout, regard horizontal.',
+      'Reculez la tête en rentrant légèrement le menton, comme pour faire un double menton, sans baisser les yeux.',
+      'Tenez 3 secondes, puis relâchez doucement.'
+    ],
+    tips: [DESKTIP, 'À refaire dès que vous sentez la tête partir en avant vers l\'écran.'],
+    stop: 'Étourdissement, douleur dans la nuque ou fourmillements dans le bras.',
+    easier: 'Tenez 1 seconde seulement.',
+    yt: 'menton rentré rétraction cervicale bureau',
+    frames: [
+      { r: [100, 92], t: -90, h: -62, a: [30, 60], l: [0, 90], props: SEAT },
+      { r: [100, 92], t: -90, h: -90, a: [30, 60], l: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskglute', name: 'Contraction des fessiers assis', group: 'Au travail', icon: '🍑',
+    dose: { type: 'reps', sets: 3, reps: 10, rest: 10 }, rest: 10,
+    cap: ['Relâché', 'Fessiers serrés'],
+    steps: [
+      'Assis droit, pieds à plat, mains sur les cuisses.',
+      'Serrez les fessiers comme pour vous soulever légèrement de la chaise, sans bouger les jambes.',
+      'Tenez 5 secondes, relâchez, respirez normalement.'
+    ],
+    tips: [DESKTIP, 'Les fessiers forts soulagent le bas du dos et le nerf sciatique.'],
+    stop: 'Crampe ou douleur dans la jambe.',
+    easier: 'Tenez 3 secondes.',
+    yt: 'contraction des fessiers assis isométrique bureau',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [30, 60], l: [0, 90], props: SEAT },
+      { r: [100, 90], t: -90, h: -90, a: [30, 60], l: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskknee', name: 'Marche des genoux assis', group: 'Au travail', icon: '🦵',
+    dose: { type: 'reps', sets: 3, reps: 10, perSide: true, rest: 10 }, rest: 10,
+    cap: ['Pied au sol', 'Genou levé'],
+    steps: [
+      'Assis droit au bord de la chaise, mains sur les côtés du siège, dos bien droit.',
+      'Soulevez un pied de quelques centimètres en gardant le bassin immobile et le ventre rentré.',
+      'Reposez-le doucement et changez de côté. Tous les mouvements d\'un côté, puis de l\'autre.'
+    ],
+    tips: [DESKTIP, 'Le bassin ne doit pas bouger : c\'est ce qui fait travailler les abdominaux profonds.'],
+    stop: 'Douleur dans le bas du dos ou le pli de l\'aine.',
+    easier: 'Levez seulement le talon.',
+    yt: 'levée de genou assis abdominaux bureau',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [60, 80], l: [0, 90], props: SEAT },
+      { r: [100, 92], t: -90, h: -90, a: [60, 80], l: [-25, 65], l2: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskpalms', name: 'Pression des mains sous le bureau', group: 'Au travail', icon: '🖐️',
+    dose: { type: 'time', sets: 3, secs: 10, rest: 10 }, rest: 10,
+    cap: ['Mains sous le bureau', 'On pousse vers le haut'],
+    steps: [
+      'Assis droit, glissez les paumes sous le plateau du bureau, coudes pliés.',
+      'Poussez les paumes vers le haut, sans bouger le bureau, et rentrez le ventre.',
+      'Tenez 10 secondes en respirant, puis relâchez.'
+    ],
+    tips: [DESKTIP, 'Fait travailler épaules, haut du dos et ventre en même temps.'],
+    stop: 'Douleur à l\'épaule ou dans le cou.',
+    easier: 'Poussez moins fort, 5 secondes.',
+    yt: 'isométrique mains sous le bureau exercice discret',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [60, 50], l: [0, 90], props: SEAT.concat(DESK) },
+      { r: [100, 92], t: -90, h: -90, a: [60, 40], l: [0, 90], props: SEAT.concat(DESK) }
+    ]
+  });
+  D.exos.push({
+    id: 'deskrotate', name: 'Rotation douce du buste assis', group: 'Au travail', icon: '🔄',
+    dose: { type: 'reps', sets: 2, reps: 8, perSide: true, rest: 10 }, rest: 10,
+    cap: ['Tourne à gauche', 'Tourne à droite'],
+    steps: [
+      'Assis droit, pieds à plat et bien posés, bras croisés sur la poitrine.',
+      'Tournez lentement le buste d\'un côté en regardant par-dessus l\'épaule, bassin immobile, petite amplitude.',
+      'Revenez au centre. Tous les mouvements d\'un côté, puis de l\'autre.'
+    ],
+    tips: [DESKTIP, 'Mouvement doux de mobilité : ne forcez jamais en fin de course.'],
+    stop: 'Douleur dans le dos ou qui descend dans la jambe.',
+    easier: 'Amplitude plus petite.',
+    yt: 'rotation du buste assis mobilité dos bureau',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [-10, -10], a2: [-10, -10], l: [0, 90], props: SEAT },
+      { r: [100, 92], t: -90, h: -90, a: [40, 40], a2: [-40, -40], l: [0, 90], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'deskangel', name: 'Ange contre le mur (debout)', group: 'Au travail', icon: '👼',
+    dose: { type: 'reps', sets: 2, reps: 10, rest: 10 }, rest: 10,
+    cap: ['Coudes pliés', 'Bras levés'],
+    steps: [
+      'Debout, dos contre un mur, pieds à 10 cm du mur, ventre rentré, bas du dos proche du mur.',
+      'Coudes pliés à hauteur des épaules, dos des mains vers le mur : faites glisser les bras vers le haut le long du mur.',
+      'Redescendez lentement. Gardez la tête et le dos en contact avec le mur autant que possible.'
+    ],
+    tips: [DESKTIP, 'À faire dans un couloir ou près d\'une cloison : ouvre la poitrine et renforce le haut du dos.'],
+    stop: 'Douleur ou fourmillements dans les épaules ou les bras.',
+    easier: 'Amplitude plus petite, ou sans que les bras touchent le mur.',
+    yt: 'wall angel ange contre le mur exercice dos',
+    frames: [
+      { r: [82, 62], t: -90, h: -90, a: [100, -80], l: [90, 90], props: [[74, 6, 74, 122]] },
+      { r: [82, 62], t: -90, h: -90, a: [-100, -100], l: [90, 90], props: [[74, 6, 74, 122]] }
+    ]
+  });
+
   D.exos.forEach(function (e) { EXO[e.id] = e; });
   function eq(ids, list, noeq, sub) {
     ids.split(' ').forEach(function (id) {
@@ -1072,6 +1240,16 @@ window.DATA = {
       { id: 'marchplace', w: true }, { id: 'ankcirc', w: true, sets: 1, reps: 8 }, { id: 'tke' }, { id: 'shortarc' }, { id: 'wallsit' },
       { id: 'stepup' }, { id: 'soleus' }, { id: 'calfslow' }, { id: 'heeldrop' }
     ]
+  });
+  D.sessions.push({
+    id: 'bureau1', name: 'Au travail : dos et ventre, 5 min', tag: 'Discret',
+    desc: 'Assis à votre bureau, sans bruit ni matériel : réveille le dos, les fessiers et la sangle abdominale. Coupez le son dans Profil si besoin (le téléphone vibre).',
+    items: [{ id: 'deskpelvic' }, { id: 'deskbrace' }, { id: 'deskretract' }, { id: 'deskchin', sets: 1 }, { id: 'deskglute', sets: 2 }]
+  });
+  D.sessions.push({
+    id: 'bureau2', name: 'Au travail : gainage assis, 10 min', tag: 'Discret',
+    desc: 'Plus complet : abdominaux profonds, dos et omoplates. Le dernier exercice se fait debout contre un mur (couloir, cloison).',
+    items: [{ id: 'deskpelvic', sets: 1 }, { id: 'deskbrace' }, { id: 'deskknee' }, { id: 'deskpalms' }, { id: 'deskrotate' }, { id: 'deskretract' }, { id: 'deskglute' }, { id: 'deskangel' }]
   });
   S('C').items = [
     { id: 'shoulders', w: true }, { id: 'chestopen', w: true }, { id: 'walk', mins: 20 },
