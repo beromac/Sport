@@ -30,7 +30,7 @@
   function defaultHave() { return (D.equipment || []).filter(function (e) { return e.def; }).map(function (e) { return e.id; }); }
   function defaults() {
     return { profile: { name: '', height: '', goal: '', age: '', sex: '' }, weights: [], waist: [], pains: [], sessions: [], activities: [],
-      equip: { have: defaultHave(), custom: [], weights: '' }, variant: {},
+      equip: { have: defaultHave(), custom: [], weights: '' }, variant: {}, cani: { week: 1 },
       settings: { ack: false, rest: 45, awake: true, sound: true }, videos: {} };
   }
   /* anciennes versions : le tour de taille était rangé dans la pesée */
@@ -58,6 +58,8 @@
     if (!Array.isArray(d.equip.custom)) d.equip.custom = [];
     if (typeof d.equip.weights !== 'string') d.equip.weights = '';
     if (!d.variant || typeof d.variant !== 'object') d.variant = {};
+    if (!d.cani || typeof d.cani !== 'object') d.cani = { week: 1 };
+    d.cani.week = Math.min(12, Math.max(1, parseInt(d.cani.week, 10) || 1));
     return d;
   }
   var S = load();
@@ -78,8 +80,9 @@
     var s = 0;
     items.forEach(function (it) {
       var ex = EX[it.id], d = doseOf(ex, it), k = d.perSide ? 2 : 1;
-      if (d.type === 'reps') s += d.sets * (d.reps * k * 3.5) + (d.sets - 1) * ex.rest;
-      else if (d.type === 'time') s += d.sets * d.secs * k + (d.sets - 1) * ex.rest;
+      var rs = d.rest != null ? d.rest : ex.rest;
+      if (d.type === 'reps') s += d.sets * (d.reps * k * 3.5) + (d.sets - 1) * rs;
+      else if (d.type === 'time') s += d.sets * d.secs * k + (d.sets - 1) * rs;
       else s += d.mins * 60;
       s += 30;
     });
@@ -207,13 +210,36 @@
     return h + belly + '</section>';
   }
 
+  function caniCard() {
+    var w = S.cani.week, c = D.cani.weeks[w - 1], id = 'cani' + w, wk = weekStart(today());
+    var done = S.sessions.filter(function (s) { return s.id === id && weekStart(s.d) === wk; }).length;
+    var ph = c.phase === 'Cani-marche' ? 'Phase 1 : sans impact' : c.phase === 'Trot très doux' ? 'Phase 2 : trot (accord du médecin ou kiné)' : 'Phase 3 : canicross (accord du médecin ou kiné)';
+    return '<section class="card"><div class="row sb"><h2 style="margin:0">🐕 Canicross avec mon beagle</h2><span class="pill">Semaine ' + w + '/12</span></div>' +
+      '<p class="muted">' + ph + '</p><p><b>' + esc(c.text) + '</b></p>' +
+      '<p class="muted">2 séances cette semaine, avec au moins un jour de repos entre les deux. Faites : ' + done + '/2 cette semaine.</p>' +
+      '<button class="btn primary" data-act="preview" data-id="' + id + '">Voir et démarrer</button> ' +
+      '<button class="btn" data-act="canihelp">Conseils (vous et le chien)</button>' +
+      '<div class="row" style="margin-top:10px"><button class="btn small grow" data-act="caniweek" data-d="-1"' + (w <= 1 ? ' disabled' : '') + '>◀ Semaine précédente</button>' +
+      '<button class="btn small grow" data-act="caniweek" data-d="1"' + (w >= 12 ? ' disabled' : '') + '>Semaine suivante ▶</button></div>' +
+      '<p class="muted">Passez à la semaine suivante seulement si les 2 séances se sont bien passées : pas de douleur au-delà de 3/10 pour vous, et un chien en forme.</p></section>';
+  }
+  function caniHelp() {
+    var hp = D.cani.help;
+    function ul(l) { return '<ul class="t">' + l.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>'; }
+    openSheet('<div class="top"><h2 style="margin:0">Canicross : conseils</h2><button class="x" data-act="close" aria-label="Fermer">✕</button></div>' +
+      '<div class="banner warn">La course (impact) n\'est pas automatiquement compatible avec un ménisque fissuré, une sciatique et un tendon d\'Achille opéré. Faites valider le trot par votre médecin ou kiné.</div>' +
+      '<h3>Pour vous</h3>' + ul(hp.you) + '<h3>Pour votre beagle</h3>' + ul(hp.dog) + '<p class="muted">' + esc(hp.src) + '</p>' +
+      '<button class="btn big" data-act="close" style="margin-top:12px">Fermer</button>');
+  }
   function viewSessions() {
     var h = '<h1>Séances</h1><button class="btn big" data-act="addact" style="margin-bottom:12px">➕ Ajouter une activité hors séance</button>';
     D.sessions.forEach(function (s) {
+      if (s.hidden) return;
       h += '<section class="card"><div class="row sb"><h2 style="margin:0">' + esc(s.name) + '</h2><span class="pill">' + esc(s.tag) + '</span></div>' +
         '<p class="muted">' + esc(s.desc) + '</p><p class="muted">' + s.items.length + ' exercices · environ ' + estMinutes(s.items) + ' min</p>' +
         '<button class="btn primary" data-act="preview" data-id="' + s.id + '">Voir et démarrer</button></section>';
     });
+    h += caniCard();
     h += '<section class="card"><h2>Semaine type</h2><ul class="t"><li>Lundi : séance A</li><li>Mardi : marche (20 à 30 min)</li><li>Mercredi : séance B</li><li>Jeudi : vélo ou piscine, ou marche</li><li>Vendredi : séance A</li><li>Samedi : séance C</li><li>Dimanche : repos</li></ul>' +
       '<p class="muted">Les jours de douleur, remplacez par la séance douce.</p></section>';
     return h;
@@ -401,7 +427,7 @@
       '<section class="card"><button class="btn big" data-act="safety">🛟 Règles de sécurité</button>' +
       (deferredInstall ? '<button class="btn big" data-act="install" style="margin-top:10px">📲 Installer l\'application</button>' : '') +
       '<button class="btn big danger" data-act="reset" style="margin-top:10px">Effacer toutes mes données</button></section>' +
-      '<p class="muted" style="text-align:center">FitSanté v10 · ne remplace pas un avis médical</p>';
+      '<p class="muted" style="text-align:center">FitSanté v11 · ne remplace pas un avis médical</p>';
   }
 
   /* ---------- matériel et versions « avec / sans matériel » ---------- */
@@ -791,7 +817,7 @@
   function finishSet() {
     var it = P.items[P.i];
     if (P.set < it.dose.sets && it.dose.type !== 'cardio') {
-      P.set += 1; P.mode = 'rest'; P.t = S.settings.rest; P.total = P.t;
+      P.set += 1; P.mode = 'rest'; P.t = it.dose.rest != null ? it.dose.rest : S.settings.rest; P.total = P.t;
       startTick();
     } else {
       if (P.done.indexOf(it.ex.id) < 0) P.done.push(it.ex.id);
@@ -819,7 +845,7 @@
       '<div class="bar"><i style="width:' + Math.round(P.i / n * 100) + '%"></i></div>';
     if (P.mode === 'rest') {
       var next = ex;
-      h += '<h2 style="text-align:center">Repos</h2><div class="timer" id="ptime">' + mmss(P.t) + '</div>' +
+      h += '<h2 style="text-align:center">' + esc(d.restTxt || 'Repos') + '</h2><div class="timer" id="ptime">' + mmss(P.t) + '</div>' +
         '<p class="muted" style="text-align:center">Prochain : série ' + P.set + ' sur ' + d.sets + ' · ' + esc(next.name) + '</p>' +
         '<div class="row"><button class="btn grow" data-act="restplus">+15 s</button><button class="btn primary grow" data-act="restskip">Passer</button></div>';
     } else {
@@ -890,6 +916,8 @@
       S.weights = S.weights.filter(function (w) { return w.d !== t; });
       S.weights.push(e); save(); render();
     },
+    canihelp: function () { caniHelp(); },
+    caniweek: function (el) { S.cani.week = Math.min(12, Math.max(1, S.cani.week + (+el.dataset.d || 0))); save(); render(); },
     metric: function (el) { ui.metric = el.dataset.m; render(); },
     addwaist: function () {
       var cm = num($('#wcm').value);

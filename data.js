@@ -795,6 +795,217 @@ window.DATA = {
     ]
   });
 
+
+  /* ===== Tendon d'Achille (4 ans après) et genoux ===== */
+  D.groups.splice(D.groups.indexOf('Équilibre & cheville'), 0, 'Tendon & genoux');
+  D.groups.splice(D.groups.indexOf('Cardio doux'), 0, 'Canicross');
+  D.equipment.push({ id: 'marche', name: 'Marche d\'escalier ou step bas (10 à 15 cm)', short: 'marche', def: false });
+  var TENDON = 'Charge progressive : la douleur au tendon ou au genou doit rester à 3/10 maximum et ne pas être plus forte le lendemain matin. Laissez 48 h entre deux séances qui chargent le tendon.';
+  var SEAT = [[86, 94, 116, 94], [88, 94, 88, 122], [114, 94, 114, 122]];
+  var STEP = [[70, 118, 112, 118], [70, 118, 70, 124], [112, 118, 112, 124]];
+  D.exos.push({
+    id: 'tke', name: 'Extension du genou allongé (serviette sous le genou)', group: 'Tendon & genoux', icon: '🦵',
+    dose: { type: 'reps', sets: 3, reps: 10, perSide: true }, rest: 30,
+    cap: ['Genou détendu', 'Genou écrasé sur la serviette'],
+    steps: [
+      'Allongé sur le dos, une serviette roulée sous le genou d\'une jambe, l\'autre jambe pliée, pied au sol.',
+      'Poussez l\'arrière du genou sur la serviette en contractant la cuisse, jusqu\'à ce que la jambe soit bien tendue.',
+      'Tenez 3 secondes, relâchez en 3 secondes. Faites tous les mouvements d\'un côté, puis de l\'autre.'
+    ],
+    tips: ['Renforce le quadriceps, qui protège le genou, sans aucune flexion ni charge.', TENDON],
+    stop: 'Douleur vive dans le genou, ou fourmillements dans la jambe.',
+    easier: 'Contractez la cuisse 5 secondes sans chercher à tendre complètement.',
+    yt: 'extension terminale du genou serviette quadriceps ménisque',
+    frames: [
+      { r: [90, 122], t: 180, h: 180, a: [-15, -15], l: [-10, 6], l2: [-55, 60], props: [[114, 118, 126, 118], [114, 121, 126, 121]] },
+      { r: [90, 122], t: 180, h: 180, a: [-15, -15], l: [0, 0], l2: [-55, 60], props: [[114, 118, 126, 118], [114, 121, 126, 121]] }
+    ]
+  });
+  D.exos.push({
+    id: 'shortarc', name: 'Extension de jambe assis (derniers degrés)', group: 'Tendon & genoux', icon: '🪑',
+    dose: { type: 'reps', sets: 3, reps: 12, perSide: true }, rest: 45,
+    cap: ['Genou plié', 'Jambe tendue'],
+    steps: [
+      'Assis bien droit sur une chaise stable, dos soutenu.',
+      'Depuis le genou à demi plié, tendez lentement la jambe jusqu\'à l\'horizontale, tenez 2 secondes.',
+      'Redescendez en 3 secondes, sans poser le pied. Faites tous les mouvements d\'un côté, puis de l\'autre.'
+    ],
+    tips: ['Travaille le quadriceps sur la zone où le genou est le moins sollicité.', TENDON],
+    stop: 'Douleur dans le genou, craquement douloureux ou blocage.',
+    easier: 'Amplitude plus petite, ou sans tenir la position.',
+    yt: 'extension de jambe assis quadriceps genou renforcement',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [80, 90], l: [0, 45], props: SEAT },
+      { r: [100, 92], t: -90, h: -90, a: [80, 90], l: [0, 0], props: SEAT }
+    ]
+  });
+  D.exos.push({
+    id: 'wallsit', name: 'Chaise au mur (genoux peu fléchis)', group: 'Tendon & genoux', icon: '🧱',
+    dose: { type: 'time', sets: 3, secs: 20 }, rest: 45,
+    cap: ['Dos au mur', 'Un peu plus bas'],
+    steps: [
+      'Dos et fessiers contre un mur, pieds à environ 40 cm du mur, largeur du bassin.',
+      'Glissez doucement vers le bas en fléchissant les genoux de 30 à 40° seulement, comme si vous étiez à moitié assis.',
+      'Tenez le temps indiqué en respirant, puis remontez en poussant sur les talons.'
+    ],
+    tips: ['Position statique : elle renforce les cuisses sans bouger le genou. Ne descendez jamais jusqu\'à 90°.', TENDON],
+    stop: 'Douleur dans le genou ou dans le bas du dos, ou dans la jambe.',
+    easier: 'Descendez moins bas, ou tenez 10 secondes.',
+    yt: 'chaise au mur isométrique quadriceps genou peu fléchi',
+    frames: [
+      { r: [82, 66], t: -90, h: -90, a: [60, 50], l: [70, 100], props: [[74, 6, 74, 122]] },
+      { r: [82, 68], t: -90, h: -90, a: [60, 50], l: [62, 100], props: [[74, 6, 74, 122]] }
+    ]
+  });
+  D.exos.push({
+    id: 'stepup', name: 'Montée sur une marche basse', group: 'Tendon & genoux', icon: '🪜',
+    dose: { type: 'reps', sets: 3, reps: 8, perSide: true }, rest: 45,
+    cap: ['Pied sur la marche', 'Debout sur la marche'],
+    steps: [
+      'Face à une marche basse (10 à 15 cm), une main près d\'un appui.',
+      'Posez le pied entier sur la marche, poussez sur ce pied pour monter, sans vous aider de l\'autre jambe.',
+      'Redescendez lentement en contrôlant (3 secondes). Faites tous les mouvements d\'un côté, puis de l\'autre.'
+    ],
+    tips: ['Genou aligné au-dessus du pied, jamais rentré vers l\'intérieur.', TENDON],
+    stop: 'Douleur au genou, au tendon d\'Achille ou dans la jambe.',
+    easier: 'Marche plus basse, ou appui plus fort de la main.',
+    yt: 'montée de marche step up genou renforcement doux',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [60, 60], l: [50, 105], l2: [92, 92], props: [[104, 114, 140, 114], [104, 114, 104, 124], [140, 114, 140, 124]] },
+      { r: [118, 54], t: -90, h: -90, a: [60, 60], l: [90, 90], l2: [92, 92], props: [[104, 114, 140, 114], [104, 114, 104, 124], [140, 114, 140, 124]] }
+    ]
+  });
+  D.exos.push({
+    id: 'soleus', name: 'Montées sur les pointes assis (mollet profond)', group: 'Tendon & genoux', icon: '🦶',
+    dose: { type: 'reps', sets: 3, reps: 12 }, rest: 45,
+    cap: ['Talons au sol', 'Talons levés'],
+    steps: [
+      'Assis sur une chaise, pieds à plat sous les genoux. Posez un sac à dos chargé (ou des bouteilles) sur les cuisses, près des genoux.',
+      'Levez les deux talons le plus haut possible en 2 secondes, tenez 1 seconde.',
+      'Redescendez lentement en 3 secondes.'
+    ],
+    tips: ['Genou plié : c\'est le muscle soléaire qui travaille, le grand allié du tendon d\'Achille.', TENDON],
+    stop: 'Douleur au tendon d\'Achille (au-delà de 3/10) ou crampe forte.',
+    easier: 'Sans charge sur les cuisses.',
+    yt: 'mollet assis soléaire renforcement tendon d\'achille',
+    frames: [
+      { r: [100, 92], t: -90, h: -90, a: [30, 70], l: [0, 90], props: SEAT.concat([[124, 82, 138, 82], [124, 82, 124, 92]]) },
+      { r: [100, 92], t: -90, h: -90, a: [30, 70], l: [-8, 90], props: SEAT.concat([[124, 78, 138, 78], [124, 78, 124, 88]]) }
+    ]
+  });
+  D.exos.push({
+    id: 'calfslow', name: 'Montées lentes chargées (3 s en haut, 3 s en bas)', group: 'Tendon & genoux', icon: '🎒',
+    dose: { type: 'reps', sets: 3, reps: 10 }, rest: 60,
+    cap: ['Pieds à plat', 'Sur la pointe'],
+    steps: [
+      'Debout, un sac à dos chargé sur le dos (ou une bouteille dans chaque main), mains près d\'un appui.',
+      'Montez sur la pointe des pieds en 3 secondes, tenez 1 seconde en haut.',
+      'Redescendez très lentement en 3 secondes. Augmentez la charge petit à petit, quand les 3 séries sont faciles.'
+    ],
+    tips: ['La lenteur et la charge sont ce qui rend le tendon plus solide, plus que le nombre de répétitions.', TENDON],
+    stop: 'Douleur au tendon d\'Achille (au-delà de 3/10), au mollet ou au genou.',
+    easier: 'Sans charge, ou « Montées sur la pointe des pieds » classiques.',
+    yt: 'montées de mollets lentes chargées tendon d\'achille',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [50, 50], l: [90, 90], props: [[126, 46, 126, 122], [118, 46, 134, 46], [100, 122, 108, 122], [95, 30, 95, 48], [95, 30, 89, 30], [89, 30, 89, 48]] },
+      { r: [100, 54], t: -90, h: -90, a: [50, 50], l: [90, 90], props: [[126, 46, 126, 122], [118, 46, 134, 46], [100, 114, 108, 122], [95, 22, 95, 40], [95, 22, 89, 22], [89, 22, 89, 40]] }
+    ]
+  });
+  D.exos.push({
+    id: 'heeldrop', name: 'Descente lente sur un pied (talon qui descend)', group: 'Tendon & genoux', icon: '⬇️',
+    dose: { type: 'reps', sets: 3, reps: 10, perSide: true }, rest: 60,
+    cap: ['Sur la pointe', 'Talon sous la marche'],
+    steps: [
+      'Debout sur le bord d\'une marche, pointes des pieds sur la marche, talons dans le vide, une main sur la rampe.',
+      'Montez sur la pointe des deux pieds. Reportez tout le poids sur une seule jambe, genou tendu.',
+      'Descendez le talon très lentement (3 secondes) sous le niveau de la marche, puis remontez avec les deux pieds. Faites toutes les répétitions d\'un côté, puis de l\'autre.'
+    ],
+    tips: ['Exercice de référence pour renforcer le tendon d\'Achille : la descente lente est la partie qui compte.', TENDON],
+    stop: 'Douleur au tendon d\'Achille (au-delà de 3/10), au mollet ou au genou.',
+    easier: 'Descente à deux pieds, ou sur sol plat sans descendre sous le niveau du sol.',
+    yt: 'descente excentrique talon marche tendon d\'achille',
+    frames: [
+      { r: [100, 54], t: -90, h: -90, a: [50, 50], l: [90, 90], l2: [100, 170], props: STEP.concat([[126, 34, 126, 124], [118, 34, 134, 34]]) },
+      { r: [100, 64], t: -90, h: -90, a: [50, 50], l: [90, 90], l2: [100, 170], props: STEP.concat([[126, 34, 126, 124], [118, 34, 134, 34]]) }
+    ]
+  });
+
+  /* ===== Canicross : marche rapide puis trot avec le chien ===== */
+  var DOG = [[142, 102, 168, 102], [168, 102, 175, 96], [145, 102, 145, 120], [165, 102, 165, 120], [142, 102, 136, 96], [106, 62, 142, 100]];
+  var DOG2 = [[146, 98, 172, 98], [172, 98, 179, 92], [149, 98, 143, 116], [169, 98, 175, 112], [146, 98, 140, 92], [106, 62, 146, 96]];
+  D.exos.push({
+    id: 'canicalm', name: 'Marche tranquille avec le chien (échauffement)', group: 'Canicross', icon: '🐕',
+    dose: { type: 'time', sets: 1, secs: 300 }, rest: 0,
+    cap: ['Le chien renifle', 'On avance'],
+    steps: [
+      'Chien en harnais, relié par la longe élastique. Marchez d\'un pas souple, sans tirer.',
+      'Laissez votre beagle renifler et faire ses besoins : c\'est son échauffement aussi.',
+      'Réveillez doucement la cheville et le genou : pas de plus en plus actif sur la fin.'
+    ],
+    tips: ['Gardez la ligne détendue. Pas de traction sur le collier : seulement le harnais.'],
+    stop: 'Douleur au genou, au tendon d\'Achille ou dans la jambe.',
+    easier: 'Plus court, ou plus lentement.',
+    yt: 'balade active avec son chien échauffement canicross',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [70, 75], a2: [110, 105], l: [74, 95], l2: [106, 85], props: DOG },
+      { r: [100, 62], t: -90, h: -90, a: [110, 105], a2: [70, 75], l: [106, 85], l2: [74, 95], props: DOG }
+    ]
+  });
+  D.exos.push({
+    id: 'canifast', name: 'Marche rapide avec le chien', group: 'Canicross', icon: '🐕',
+    dose: { type: 'time', sets: 4, secs: 180, rest: 120, restTxt: 'Marche tranquille avec le chien' }, rest: 120,
+    cap: ['Pas rapide', 'Pas rapide'],
+    steps: [
+      'Marchez vite, bras actifs, en laissant la longe élastique légèrement tendue : le chien tire un peu, vous suivez.',
+      'Le chien reste devant vous ou à votre côté ; dites « doucement » s\'il tire trop fort.',
+      'Vous devez pouvoir parler par phrases courtes. Quand le chrono sonne, ralentissez et marchez tranquillement.'
+    ],
+    tips: ['Phase sans impact : elle prépare le chien, le cœur et vos articulations à la suite.', 'Terrain souple si possible (chemin, herbe), pas de bitume dur.'],
+    stop: 'Douleur au genou (au-delà de 3/10), au tendon ou dans la jambe ; chien qui boite, halète fort ou refuse d\'avancer.',
+    easier: 'Intervalles plus courts, ou allure plus lente.',
+    yt: 'cani-marche marche rapide avec son chien débutant',
+    frames: [
+      { r: [100, 62], t: -86, h: -86, a: [60, 120], a2: [120, 60], l: [70, 95], l2: [110, 85], props: DOG },
+      { r: [100, 62], t: -86, h: -86, a: [120, 60], a2: [60, 120], l: [110, 85], l2: [70, 95], props: DOG2 }
+    ]
+  });
+  D.exos.push({
+    id: 'canitrot', name: 'Trot très doux avec le chien', group: 'Canicross', icon: '🐕‍🦺',
+    dose: { type: 'time', sets: 6, secs: 60, rest: 120, restTxt: 'Marche tranquille avec le chien' }, rest: 120,
+    cap: ['Foulée courte', 'Foulée courte'],
+    steps: [
+      'Trottinez à petits pas, très doux, sur terrain souple, le chien devant vous, longe légèrement tendue.',
+      'Foulée courte, genoux peu levés, buste droit. Vous devez pouvoir parler.',
+      'Quand le chrono sonne, passez immédiatement à la marche tranquille.'
+    ],
+    tips: ['Réservé aux semaines 5 à 12, avec l\'accord de votre médecin ou kiné : c\'est de la course (impact).', 'Pas de demi-tour brusque : le chien ne doit pas vous faire pivoter.'],
+    stop: 'Douleur au genou, au tendon d\'Achille ou dans le dos/la jambe (au-delà de 3/10) ; chien qui boite ou halète fort.',
+    easier: 'Revenez à la marche rapide (semaines 1 à 4).',
+    yt: 'trot canicross débutant foulée douce',
+    frames: [
+      { r: [100, 62], t: -82, h: -82, a: [110, 170], a2: [30, 80], l: [50, 100], l2: [120, 70], props: DOG2 },
+      { r: [100, 62], t: -82, h: -82, a: [30, 80], a2: [110, 170], l: [120, 70], l2: [50, 100], props: DOG }
+    ]
+  });
+  D.exos.push({
+    id: 'canicool', name: 'Retour au calme avec le chien', group: 'Canicross', icon: '🐕',
+    dose: { type: 'time', sets: 1, secs: 300 }, rest: 0,
+    cap: ['Marche lente', 'Marche lente'],
+    steps: [
+      'Marchez lentement jusqu\'à ce que votre respiration et celle du chien soient redevenues calmes.',
+      'Proposez de l\'eau fraîche au chien, et buvez aussi.',
+      'Retirez le harnais seulement quand il est calme.'
+    ],
+    tips: ['Ne laissez pas le chien se coucher immédiatement sans avoir marché : on récupère en douceur.'],
+    stop: 'Chien qui boite ou halète longtemps : voyez votre vétérinaire.',
+    easier: 'Marchez plus lentement.',
+    yt: 'retour au calme après le sport avec son chien',
+    frames: [
+      { r: [100, 62], t: -90, h: -90, a: [80, 95], a2: [100, 85], l: [78, 93], l2: [102, 87], props: DOG },
+      { r: [100, 62], t: -90, h: -90, a: [100, 85], a2: [80, 95], l: [102, 87], l2: [78, 93], props: DOG }
+    ]
+  });
+
   D.exos.forEach(function (e) { EXO[e.id] = e; });
   function eq(ids, list, noeq, sub) {
     ids.split(' ').forEach(function (id) {
@@ -818,6 +1029,11 @@ window.DATA = {
   eq('ankcirc', 'chaise', 'Sans chaise : asseyez-vous au bord d\'un lit ou d\'un canapé, jambe tendue devant vous.');
   eq('bandankle', 'elastique', 'Sans élastique : mêmes mouvements du pied, lentement, en résistant avec votre main ou sans résistance.');
   eq('shift bipodal tandem monowall eyesclosed heel1', 'chaise table', SUPPORT);
+  eq('tke', 'tapis', 'Sans tapis : allongez-vous sur une serviette épaisse, une couette pliée ou une moquette.');
+  eq('shortarc soleus', 'chaise', 'Sans chaise : asseyez-vous au bord d\'un lit ou d\'un canapé assez haut.');
+  eq('calfslow', 'bouteilles halteres', 'Sans charge : mêmes montées, mais encore plus lentement (4 secondes à la descente).');
+  eq('heeldrop', 'marche', 'Sans marche : faites l\'exercice sur sol plat, en descendant très lentement (4 secondes) d\'une montée sur la pointe.');
+  eq('stepup', 'marche', 'Sans marche : utilisez la première marche d\'un escalier ou un seuil solide ; à défaut, faites plutôt la chaise au mur.', 'wallsit');
   eq('foam', 'coussin', 'Sans coussin : restez sur le sol et regardez lentement de gauche à droite (ou fermez les yeux quelques secondes) pour rendre l\'exercice plus difficile.');
 
   function S(id) { return D.sessions.filter(function (s) { return s.id === id; })[0]; }
@@ -849,9 +1065,63 @@ window.DATA = {
       { id: 'heelwalk' }, { id: 'heel1' }, { id: 'bandankle', sets: 1 }
     ]
   });
+  D.sessions.push({
+    id: 'D', name: 'Séance D : tendon d\'Achille et genoux', tag: 'Renforcement',
+    desc: 'Renforce le tendon d\'Achille (montées lentes, descentes sur une marche) et les cuisses, sans flexion profonde. 1 à 2 fois par semaine, jamais deux jours de suite.',
+    items: [
+      { id: 'marchplace', w: true }, { id: 'ankcirc', w: true, sets: 1, reps: 8 }, { id: 'tke' }, { id: 'shortarc' }, { id: 'wallsit' },
+      { id: 'stepup' }, { id: 'soleus' }, { id: 'calfslow' }, { id: 'heeldrop' }
+    ]
+  });
   S('C').items = [
     { id: 'shoulders', w: true }, { id: 'chestopen', w: true }, { id: 'walk', mins: 20 },
     { id: 'hamstring' }, { id: 'piriformis' }, { id: 'sphinx', sets: 2 }, { id: 'catcamel', sets: 1, reps: 8 }
   ];
+
+
+  /* ===== Programme canicross : 12 semaines, 2 séances par semaine ===== */
+  D.cani = { weeks: [] };
+  [
+    ['Cani-marche', 'canifast', 4, 180, 120, 'Marche rapide : 4 × 3 min, avec 2 min de marche tranquille entre chaque.'],
+    ['Cani-marche', 'canifast', 5, 180, 120, 'Marche rapide : 5 × 3 min, avec 2 min de marche tranquille entre chaque.'],
+    ['Cani-marche', 'canifast', 4, 300, 120, 'Marche rapide : 4 × 5 min, avec 2 min de marche tranquille entre chaque.'],
+    ['Cani-marche', 'canifast', 4, 360, 120, 'Marche rapide : 4 × 6 min, avec 2 min de marche tranquille entre chaque.'],
+    ['Trot très doux', 'canitrot', 6, 60, 120, 'Trot : 6 × 1 min, avec 2 min de marche entre chaque.'],
+    ['Trot très doux', 'canitrot', 6, 90, 120, 'Trot : 6 × 1 min 30, avec 2 min de marche entre chaque.'],
+    ['Trot très doux', 'canitrot', 6, 120, 120, 'Trot : 6 × 2 min, avec 2 min de marche entre chaque.'],
+    ['Trot très doux', 'canitrot', 5, 180, 120, 'Trot : 5 × 3 min, avec 2 min de marche entre chaque.'],
+    ['Canicross', 'canitrot', 4, 300, 120, 'Trot : 4 × 5 min, avec 2 min de marche entre chaque.'],
+    ['Canicross', 'canitrot', 3, 420, 120, 'Trot : 3 × 7 min, avec 2 min de marche entre chaque.'],
+    ['Canicross', 'canitrot', 3, 480, 120, 'Trot : 3 × 8 min, avec 2 min de marche entre chaque.'],
+    ['Canicross', 'canitrot', 2, 720, 120, 'Trot : 2 × 12 min, avec 2 min de marche entre chaque.']
+  ].forEach(function (w, i) {
+    var n = i + 1;
+    D.cani.weeks.push({ n: n, phase: w[0], text: w[5] });
+    D.sessions.push({
+      id: 'cani' + n, hidden: true, name: 'Canicross, semaine ' + n + ' : ' + w[0], tag: 'Semaine ' + n + '/12',
+      desc: w[5] + ' Échauffement et retour au calme de 5 min chacun.',
+      items: [{ id: 'canicalm', w: true }, { id: w[1], sets: w[2], secs: w[3], rest: w[4] }, { id: 'canicool' }]
+    });
+  });
+  D.cani.help = {
+    you: [
+      'Les semaines 1 à 4 (marche rapide) n\'ont pas d\'impact. Le trot (semaines 5 à 12) est de la course : avec un ménisque fissuré, une sciatique et un tendon d\'Achille opéré, demandez l\'accord de votre médecin ou kiné avant la semaine 5.',
+      'Douleur à 3/10 maximum au genou, au tendon et au dos, et pas plus forte le lendemain matin. Sinon, refaites la semaine précédente ou revenez à la marche.',
+      'Terrain souple (chemin, forêt, herbe), pas de bitume dur, chaussures de running amorties.',
+      'Ceinture de canicross large (baudrier) et longe élastique : la traction passe par le bassin, pas par le dos. Jamais la laisse enroulée autour de la main ou du poignet.',
+      'Apprenez au chien « doucement » et « stop » en marchant. Pas de demi-tour brusque ni de pivot pied bloqué : prévenez-le avant de tourner.',
+      'Complétez avec la séance D (tendon et genoux) et l\'équilibre, 1 à 2 fois par semaine, un jour sans canicross.'
+    ],
+    dog: [
+      'Bilan chez le vétérinaire avant de commencer (cœur, respiration, poids, articulations, dos), surtout à 6 ans et en surpoids.',
+      'Harnais de traction adapté à sa morphologie et longe élastique : un harnais de promenade ne convient pas, et jamais de traction sur le collier.',
+      'Un chien en surpoids se mène avec encore plus de prudence : on n\'allonge qu\'une chose à la fois (durée ou allure), et on reste une semaine de plus si besoin.',
+      'Perte de poids : ration ajustée avec le vétérinaire et pesée une fois par mois. La promenade seule ne suffit pas.',
+      'Séance au moins 1 h après un repas. Eau à portée. Évitez les heures chaudes et, dès qu\'il fait chaud, raccourcissez ou reportez.',
+      'Votre beagle suit son nez : laissez-le renifler pendant les marches tranquilles, et gardez-le en longe hors des zones de gibier.',
+      'Arrêtez si le chien halète fort, boite, s\'arrête souvent ou refuse d\'avancer. Notez ses réactions après chaque séance.'
+    ],
+    src: 'Sources : Decathlon Conseil Sport (comment commencer le sport avec son chien), Emmène ton chien (débuter le canicross).'
+  };
 
 })();
